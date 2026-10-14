@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 340" fill="none">
+  <defs>
+    <!-- Left Figure Blue Gradient -->
+    <linearGradient id="sm_blue_grad" x1="140" y1="90" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00a0f5" />
+      <stop offset="45%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0052cc" />
+    </linearGradient>
+
+    <!-- Right Figure Green Gradient -->
+    <linearGradient id="sm_green_grad" x1="280" y1="90" x2="220" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2dd4bf" />
+      <stop offset="35%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+
+    <!-- Book Left Pages Gradient -->
+    <linearGradient id="sm_book_blue" x1="120" y1="160" x2="200" y2="210" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#072042" />
+    </linearGradient>
+
+    <!-- Book Right Pages Gradient -->
+    <linearGradient id="sm_book_green" x1="300" y1="160" x2="220" y2="210" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#044e39" />
+    </linearGradient>
+
+    <!-- Wordmark Mate Gradient -->
+    <linearGradient id="sm_mate_grad" x1="240" y1="280" x2="360" y2="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="60%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- ================= EMBLEM ================= -->
+  <!-- 1. Graduation Cap (Mortarboard) -->
+  <g id="graduation-cap">
+    <!-- Diamond Top -->
+    <polygon points="210,38 152,65 210,92 268,65" fill="#0b1e36" />
+    <!-- Under Cap / Skull Cap -->
+    <path d="M174,75.5 Q210,98 246,75.5 L243,92 Q210,108 177,92 Z" fill="#08182b" />
+    <!-- Center Button -->
+    <circle cx="210" cy="65" r="3.5" fill="#1e3a5f" />
+    <!-- Tassel String and Hanging Brush -->
+    <path d="M210,65 Q232,70 258,82" stroke="#08182b" stroke-width="2.5" stroke-linecap="round" fill="none" />
+    <polygon points="256,80 262,83 259,98 254,98" fill="#08182b" />
+  </g>
+
+  <!-- 2. Left Figure (Blue) -->
+  <g id="figure-left">
+    <!-- Head -->
+    <circle cx="158" cy="112" r="19" fill="#0284c7" />
+    <!-- Body & Reaching Arms -->
+    <path d="M124,142 C146,144 158,162 176,178 C192,192 198,206 204,228 C198,214 188,198 176,182 C164,166 148,154 124,142 Z" fill="url(#sm_blue_grad)" />
+    <!-- Dynamic Torso and Left/Right Wings -->
+    <path d="M125,142 C148,142 165,152 178,168 C194,188 202,210 205,228 C202,204 196,172 176,140 C194,124 204,96 206,94 C204,104 196,134 184,144 C172,132 152,126 125,142 Z" fill="url(#sm_blue_grad)" />
+  </g>
+
+  <!-- 3. Right Figure (Green) -->
+  <g id="figure-right">
+    <!-- Head -->
+    <circle cx="262" cy="112" r="19" fill="#10b981" />
+    <!-- Dynamic Torso and Right/Left Wings -->
+    <path d="M295,142 C272,142 255,152 242,168 C226,188 218,210 215,228 C218,204 224,172 244,140 C226,124 216,96 214,94 C216,104 224,134 236,144 C248,132 268,126 295,142 Z" fill="url(#sm_green_grad)" />
+  </g>
+
+  <!-- 4. Open Book Pages -->
+  <g id="open-book">
+    <!-- Left Top Page Stripe -->
+    <path d="M204,216 C176,192 142,184 128,184 C126,188 126,192 128,194 C144,194 176,202 203,222 Z" fill="#00a0f5" />
+    <!-- Left Middle Page Stripe -->
+    <path d="M202,223 C172,202 136,194 116,195 C114,199 114,203 116,206 C136,205 172,213 200,230 Z" fill="#0284c7" />
+    <!-- Left Bottom Cover Stripe -->
+    <path d="M198,231 C165,214 126,206 112,208 C112,216 116,220 118,222 C134,220 166,226 195,238 Z" fill="#081e3a" />
+    <!-- Left Spine Base Arch -->
+    <path d="M112,228 C144,228 178,236 208,248 C206,244 204,240 200,237 C174,228 140,222 112,222 Z" fill="#081e3a" />
+
+    <!-- Right Top Page Stripe -->
+    <path d="M216,216 C244,192 278,184 292,184 C294,188 294,192 292,194 C276,194 244,202 217,222 Z" fill="#2dd4bf" />
+    <!-- Right Middle Page Stripe -->
+    <path d="M218,223 C248,202 284,194 304,195 C306,199 306,203 304,206 C284,205 248,213 220,230 Z" fill="#10b981" />
+    <!-- Right Bottom Cover Stripe -->
+    <path d="M222,231 C255,214 294,206 308,208 C308,216 304,220 302,222 C286,220 254,226 225,238 Z" fill="#059669" />
+    <!-- Right Spine Base Arch -->
+    <path d="M308,228 C276,228 242,236 212,248 C214,244 216,240 220,237 C246,228 280,222 308,222 Z" fill="#064e3b" />
+  </g>
+
+  <!-- ================= TYPOGRAPHY ================= -->
+  <!-- "Study" in Deep Navy, "Mate" in Emerald Green -->
+  <g id="wordmark" transform="translate(42, 312)">
+    <text x="0" y="0" font-family="'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="900" font-size="64" letter-spacing="-1.5">
+      <tspan fill="#091e3a">Study</tspan>
+      <tspan fill="url(#sm_mate_grad)" dx="4">Mate</tspan>
+    </text>
+  </g>
+</svg>
