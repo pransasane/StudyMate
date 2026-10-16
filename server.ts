@@ -1,7 +1,7 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import multer from 'multer';
-import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { db, checkFirestoreConnection } from './server/db.js';
 import { requireAuth, hashPassword, verifyPassword, generateToken, sanitizeUser, AuthenticatedRequest } from './server/auth.js';
@@ -9,7 +9,6 @@ import { extractTextFromBuffer } from './server/extractor.js';
 import { generateSummary, generateQuiz, testGeminiConnection, testOpenRouterConnection } from './server/ai.js';
 import { seedDemoDataIfEmpty } from './server/seed.js';
 
-dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
