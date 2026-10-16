@@ -27,7 +27,8 @@
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "vite": "^8.3.0",
-    "firebase": "^12.4.0"
+    "firebase": "^12.4.0",
+    "firebase-admin": "^13.5.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
