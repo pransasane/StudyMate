@@ -3,7 +3,7 @@ import path from 'path';
 import multer from 'multer';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
-import { db } from './server/db.js';
+import { db, checkFirestoreConnection } from './server/db.js';
 import { requireAuth, hashPassword, verifyPassword, generateToken, sanitizeUser, AuthenticatedRequest } from './server/auth.js';
 import { extractTextFromBuffer } from './server/extractor.js';
 import { generateSummary, generateQuiz, testGeminiConnection, testOpenRouterConnection } from './server/ai.js';
@@ -51,6 +51,12 @@ async function startServer() {
   }
 
   // --- API Routes ---
+
+  // Diagnostic endpoint for checking backend and Firestore availability.
+  app.get('/api/health', asyncRoute(async (_req, res) => {
+    await checkFirestoreConnection();
+    res.json({ ok: true, database: 'connected', timestamp: new Date().toISOString() });
+  }));
 
   // Health / Config status
   app.get('/api/config/status', asyncRoute(async (req: AuthenticatedRequest, res) => {
