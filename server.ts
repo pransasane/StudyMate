@@ -49,7 +49,7 @@ async function startServer() {
   // --- API Routes ---
 
   // Health / Config status
-  app.get('/api/config/status', (req: AuthenticatedRequest, res) => {
+  app.get('/api/config/status', async (req: AuthenticatedRequest, res) => {
     const hasGemini = Boolean(process.env.GEMINI_API_KEY);
     const hasOpenRouterEnv = Boolean(process.env.OPENROUTER_API_KEY);
     res.json({
@@ -86,7 +86,7 @@ async function startServer() {
   });
 
   // Auth: Register
-  app.post('/api/auth/register', (req, res) => {
+  app.post('/api/auth/register', async (req: AuthenticatedRequest, res) => {
     try {
       const { email, password, fullName, educationLevel } = req.body;
       if (!email || !password || !fullName) {
@@ -96,12 +96,12 @@ async function startServer() {
         return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
       }
 
-      const existing = db.getUserByEmail(email);
+      const existing = await db.getUserByEmail(email);
       if (existing) {
         return res.status(400).json({ error: 'An account with this email already exists. Please log in.' });
       }
 
-      const user = db.createUser({
+      const user = await db.createUser({
         email: email.trim().toLowerCase(),
         passwordHash: hashPassword(password),
         fullName: fullName.trim(),
@@ -121,14 +121,14 @@ async function startServer() {
   });
 
   // Auth: Login
-  app.post('/api/auth/login', (req, res) => {
+  app.post('/api/auth/login', async (req, res) => {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required.' });
       }
 
-      const user = db.getUserByEmail(email);
+      const user = await db.getUserByEmail(email);
       if (!user || !verifyPassword(password, user.passwordHash)) {
         return res.status(401).json({ error: 'Invalid email or password. Please try again.' });
       }
@@ -144,12 +144,12 @@ async function startServer() {
   });
 
   // Auth: Me
-  app.get('/api/auth/me', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.get('/api/auth/me', requireAuth, async (req: AuthenticatedRequest, res) => {
     res.json({ user: sanitizeUser(req.user!) });
   });
 
   // Auth: Password Reset
-  app.post('/api/auth/reset-password', (req, res) => {
+  app.post('/api/auth/reset-password', async (req, res) => {
     try {
       const { email, newPassword } = req.body;
       if (!email || !newPassword) {
@@ -159,12 +159,12 @@ async function startServer() {
         return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
       }
 
-      const user = db.getUserByEmail(email);
+      const user = await db.getUserByEmail(email);
       if (!user) {
         return res.status(404).json({ error: 'No account found with this email address.' });
       }
 
-      db.updateUser(user.id, {
+      await db.updateUser(user.id, {
         passwordHash: hashPassword(newPassword),
       });
 
@@ -175,7 +175,7 @@ async function startServer() {
   });
 
   // Auth: User Settings (Gemini Key, OpenRouter Key, Model, Preferences)
-  app.put('/api/auth/settings', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.put('/api/auth/settings', requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const { fullName, educationLevel, geminiApiKey, openRouterApiKey, preferredProvider, openRouterModel } = req.body;
       const updates: any = {};
@@ -187,7 +187,7 @@ async function startServer() {
       if (preferredProvider !== undefined) updates.preferredProvider = preferredProvider;
       if (openRouterModel !== undefined) updates.openRouterModel = openRouterModel.trim();
 
-      const updated = db.updateUser(req.user!.id, updates);
+      const updated = await db.updateUser(req.user!.id, updates);
       res.json({ user: sanitizeUser(updated!) });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Failed to update settings' });
@@ -195,13 +195,13 @@ async function startServer() {
   });
 
   // Dashboard Stats
-  app.get('/api/dashboard/stats', requireAuth, (req: AuthenticatedRequest, res) => {
-    const stats = db.getUserStats(req.user!.id);
+  app.get('/api/dashboard/stats', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const stats = await db.getUserStats(req.user!.id);
     res.json(stats);
   });
 
   // Document Upload
-  app.post('/api/documents/upload', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.post('/api/documents/upload', requireAuth, async (req: AuthenticatedRequest, res) => {
     upload.single('file')(req, res, async (err) => {
       if (err) {
         return res.status(400).json({ error: err.message || 'File upload error.' });
@@ -220,7 +220,7 @@ async function startServer() {
 
         const customTitle = req.body.title?.trim() || req.file.originalname.replace(/\.[^/.]+$/, '');
 
-        const doc = db.createDocument({
+        const doc = await db.createDocument({
           userId: req.user!.id,
           title: customTitle,
           originalFilename: req.file.originalname,
@@ -241,7 +241,7 @@ async function startServer() {
   });
 
   // Direct Text Paste Document
-  app.post('/api/documents/paste', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.post('/api/documents/paste', requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
       const { title, text } = req.body;
       if (!text || text.trim().length < 20) {
@@ -252,7 +252,7 @@ async function startServer() {
       const words = cleanText.split(/\s+/).filter(Boolean);
       const snippet = cleanText.slice(0, 300).replace(/\s+/g, ' ') + (cleanText.length > 300 ? '...' : '');
 
-      const doc = db.createDocument({
+      const doc = await db.createDocument({
         userId: req.user!.id,
         title: title?.trim() || 'Pasted Notes ' + new Date().toLocaleDateString(),
         originalFilename: 'pasted_notes.txt',
@@ -271,14 +271,14 @@ async function startServer() {
   });
 
   // List Documents
-  app.get('/api/documents', requireAuth, (req: AuthenticatedRequest, res) => {
-    const docs = db.getDocuments(req.user!.id);
+  app.get('/api/documents', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const docs = await db.getDocuments(req.user!.id);
     res.json({ documents: docs });
   });
 
   // Get Document
-  app.get('/api/documents/:id', requireAuth, (req: AuthenticatedRequest, res) => {
-    const doc = db.getDocumentById(req.params.id, req.user!.id);
+  app.get('/api/documents/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const doc = await db.getDocumentById(req.params.id, req.user!.id);
     if (!doc) {
       return res.status(404).json({ error: 'Document not found.' });
     }
@@ -286,8 +286,8 @@ async function startServer() {
   });
 
   // Delete Document
-  app.delete('/api/documents/:id', requireAuth, (req: AuthenticatedRequest, res) => {
-    const success = db.deleteDocument(req.params.id, req.user!.id);
+  app.delete('/api/documents/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const success = await db.deleteDocument(req.params.id, req.user!.id);
     if (!success) {
       return res.status(404).json({ error: 'Document not found or already deleted.' });
     }
@@ -302,7 +302,7 @@ async function startServer() {
       let effectiveTitle = title || 'Study Summary';
 
       if (documentId) {
-        const doc = db.getDocumentById(documentId, req.user!.id);
+        const doc = await db.getDocumentById(documentId, req.user!.id);
         if (!doc) {
           return res.status(404).json({ error: 'Source document not found.' });
         }
@@ -329,7 +329,7 @@ async function startServer() {
         openRouterModel: user.openRouterModel,
       });
 
-      const summary = db.createSummary({
+      const summary = await db.createSummary({
         userId: user.id,
         documentId: documentId || undefined,
         title: `${effectiveTitle} (${validSummaryType.replace('_', ' ').toUpperCase()})`,
@@ -353,14 +353,14 @@ async function startServer() {
   });
 
   // List Summaries
-  app.get('/api/summaries', requireAuth, (req: AuthenticatedRequest, res) => {
-    const summaries = db.getSummaries(req.user!.id);
+  app.get('/api/summaries', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const summaries = await db.getSummaries(req.user!.id);
     res.json({ summaries });
   });
 
   // Get Summary
-  app.get('/api/summaries/:id', requireAuth, (req: AuthenticatedRequest, res) => {
-    const summary = db.getSummaryById(req.params.id, req.user!.id);
+  app.get('/api/summaries/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const summary = await db.getSummaryById(req.params.id, req.user!.id);
     if (!summary) {
       return res.status(404).json({ error: 'Summary not found.' });
     }
@@ -368,8 +368,8 @@ async function startServer() {
   });
 
   // Delete Summary
-  app.delete('/api/summaries/:id', requireAuth, (req: AuthenticatedRequest, res) => {
-    const success = db.deleteSummary(req.params.id, req.user!.id);
+  app.delete('/api/summaries/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const success = await db.deleteSummary(req.params.id, req.user!.id);
     if (!success) {
       return res.status(404).json({ error: 'Summary not found.' });
     }
@@ -384,12 +384,12 @@ async function startServer() {
       let effectiveTitle = title || 'Subject Mastery Quiz';
 
       if (documentId) {
-        const doc = db.getDocumentById(documentId, req.user!.id);
+        const doc = await db.getDocumentById(documentId, req.user!.id);
         if (!doc) return res.status(404).json({ error: 'Document not found.' });
         textForQuiz = doc.extractedText;
         if (!title) effectiveTitle = doc.title.endsWith('Quiz') ? doc.title : `${doc.title} Quiz`;
       } else if (summaryId) {
-        const summary = db.getSummaryById(summaryId, req.user!.id);
+        const summary = await db.getSummaryById(summaryId, req.user!.id);
         if (!summary) return res.status(404).json({ error: 'Summary not found.' });
         textForQuiz = summary.content;
         if (!title) effectiveTitle = summary.title.endsWith('Quiz') ? summary.title : `${summary.title} Quiz`;
@@ -416,7 +416,7 @@ async function startServer() {
         openRouterModel: user.openRouterModel,
       });
 
-      const quiz = db.createQuiz({
+      const quiz = await db.createQuiz({
         userId: user.id,
         documentId: documentId || undefined,
         summaryId: summaryId || undefined,
@@ -441,14 +441,14 @@ async function startServer() {
   });
 
   // List Quizzes
-  app.get('/api/quizzes', requireAuth, (req: AuthenticatedRequest, res) => {
-    const quizzes = db.getQuizzes(req.user!.id);
+  app.get('/api/quizzes', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const quizzes = await db.getQuizzes(req.user!.id);
     res.json({ quizzes });
   });
 
   // Get Quiz
-  app.get('/api/quizzes/:id', requireAuth, (req: AuthenticatedRequest, res) => {
-    const quiz = db.getQuizById(req.params.id, req.user!.id);
+  app.get('/api/quizzes/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const quiz = await db.getQuizById(req.params.id, req.user!.id);
     if (!quiz) {
       return res.status(404).json({ error: 'Quiz not found.' });
     }
@@ -456,8 +456,8 @@ async function startServer() {
   });
 
   // Delete Quiz
-  app.delete('/api/quizzes/:id', requireAuth, (req: AuthenticatedRequest, res) => {
-    const success = db.deleteQuiz(req.params.id, req.user!.id);
+  app.delete('/api/quizzes/:id', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const success = await db.deleteQuiz(req.params.id, req.user!.id);
     if (!success) {
       return res.status(404).json({ error: 'Quiz not found.' });
     }
@@ -465,9 +465,9 @@ async function startServer() {
   });
 
   // Submit Quiz Attempt
-  app.post('/api/quizzes/:id/submit', requireAuth, (req: AuthenticatedRequest, res) => {
+  app.post('/api/quizzes/:id/submit', requireAuth, async (req: AuthenticatedRequest, res) => {
     try {
-      const quiz = db.getQuizById(req.params.id, req.user!.id);
+      const quiz = await db.getQuizById(req.params.id, req.user!.id);
       if (!quiz) {
         return res.status(404).json({ error: 'Quiz not found.' });
       }
@@ -507,7 +507,7 @@ async function startServer() {
 
       const percentage = Math.round((score / totalQuestions) * 100);
 
-      const attempt = db.createQuizAttempt({
+      const attempt = await db.createQuizAttempt({
         userId: req.user!.id,
         quizId: quiz.id,
         quizTitle: quiz.title,
@@ -531,14 +531,14 @@ async function startServer() {
   });
 
   // Get Attempts for Quiz
-  app.get('/api/quizzes/:id/attempts', requireAuth, (req: AuthenticatedRequest, res) => {
-    const attempts = db.getAttemptsForQuiz(req.params.id, req.user!.id);
+  app.get('/api/quizzes/:id/attempts', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const attempts = await db.getAttemptsForQuiz(req.params.id, req.user!.id);
     res.json({ attempts });
   });
 
   // Get All Attempts
-  app.get('/api/attempts', requireAuth, (req: AuthenticatedRequest, res) => {
-    const attempts = db.getQuizAttempts(req.user!.id);
+  app.get('/api/attempts', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const attempts = await db.getQuizAttempts(req.user!.id);
     res.json({ attempts });
   });
 
