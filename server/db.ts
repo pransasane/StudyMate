@@ -1,4 +1,4 @@
-import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
+import { applicationDefault, cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import crypto from 'crypto';
 
@@ -33,9 +33,30 @@ export interface QuizAttempt {
 }
 
 const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || 'studymate-135bf';
-if (!getApps().length) {
+
+function initializeFirebaseAdmin() {
+  if (getApps().length) return;
+  const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (rawServiceAccount) {
+    try {
+      const serviceAccount = JSON.parse(rawServiceAccount);
+      if (serviceAccount.private_key) {
+        serviceAccount.private_key = String(serviceAccount.private_key).replace(/\\n/g, '\n');
+      }
+      initializeApp({ credential: cert(serviceAccount), projectId });
+      return;
+    } catch (error) {
+      console.error('FIREBASE_SERVICE_ACCOUNT_JSON is not valid service-account JSON.');
+      throw new Error('Firebase configuration error: check FIREBASE_SERVICE_ACCOUNT_JSON in your server secrets.');
+    }
+  }
+
+  // Cloud Run and other Google Cloud hosts can provide Application Default Credentials.
+  // Local development can set GOOGLE_APPLICATION_CREDENTIALS to a private JSON file path.
   initializeApp({ credential: applicationDefault(), projectId });
 }
+
+initializeFirebaseAdmin();
 const firestore: Firestore = getFirestore();
 firestore.settings({ ignoreUndefinedProperties: true });
 
