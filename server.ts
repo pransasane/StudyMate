@@ -41,7 +41,7 @@ async function startServer() {
 
   // Seed demo data on start
   try {
-    seedDemoDataIfEmpty();
+    await seedDemoDataIfEmpty();
   } catch (err) {
     console.error('Error seeding demo data:', err);
   }
