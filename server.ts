@@ -36,7 +36,7 @@ type AsyncRouteHandler = (req: any, res: any, next: any) => Promise<unknown>;
 const asyncRoute = (handler: AsyncRouteHandler): express.RequestHandler =>
   (req, res, next) => { void Promise.resolve(handler(req, res, next)).catch(next); };
 
-async function startServer() {
+export async function createApp() {
   const app = express();
 
   app.use(express.json({ limit: '15mb' }));
@@ -577,12 +577,16 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`StudyMate server listening on http://0.0.0.0:${PORT}`);
-  });
+  return app;
 }
 
-startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+if (process.env.VERCEL !== '1') {
+  createApp().then((app) => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`StudyMate server listening on http://0.0.0.0:${PORT}`);
+    });
+  }).catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
