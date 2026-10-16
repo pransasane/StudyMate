@@ -60,6 +60,10 @@ initializeFirebaseAdmin();
 const firestore: Firestore = getFirestore();
 firestore.settings({ ignoreUndefinedProperties: true });
 
+export async function checkFirestoreConnection(): Promise<void> {
+  await firestore.collection('users').limit(1).get();
+}
+
 type CollectionName = 'users' | 'documents' | 'summaries' | 'quizzes' | 'quizAttempts';
 class Database {
   private collection(name: CollectionName) { return firestore.collection(name); }
