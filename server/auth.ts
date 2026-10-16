@@ -30,7 +30,7 @@ export function generateToken(user: User): string {
   );
 }
 
-export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Authentication required. Please sign in to continue.' });
@@ -39,7 +39,7 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
   const token = authHeader.split(' ')[1];
   try {
     const payload = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
-    const user = db.getUserById(payload.id);
+    const user = await db.getUserById(payload.id);
     if (!user) {
       return res.status(401).json({ error: 'User session has expired or user not found. Please log in again.' });
     }
