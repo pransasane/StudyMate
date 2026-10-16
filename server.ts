@@ -552,6 +552,16 @@ async function startServer() {
     res.json({ attempts });
   }));
 
+  // Keep backend failures visible to the frontend instead of leaving requests pending.
+  app.use('/api', (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(`API request failed: ${req.method} ${req.path}`, err);
+    if (res.headersSent) return next(err);
+    const message = process.env.NODE_ENV === 'production'
+      ? 'The request failed. Check server configuration and try again.'
+      : (err?.message || 'Unexpected server error.');
+    res.status(500).json({ error: message });
+  });
+
   // --- Frontend Integration ---
   if (!isProduction) {
     const { createServer: createViteServer } = await import('vite');
