@@ -1,301 +1,163 @@
-import fs from 'fs';
-import path from 'path';
+import { applicationDefault, cert, getApps, initializeApp } from 'firebase-admin/app';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import crypto from 'crypto';
 
 export interface User {
-  id: string;
-  email: string;
-  passwordHash: string;
-  fullName: string;
-  educationLevel?: string;
-  geminiApiKey?: string;
-  openRouterApiKey?: string;
-  preferredProvider?: 'openrouter' | 'gemini';
-  openRouterModel?: string;
-  createdAt: string;
+  id: string; email: string; passwordHash: string; fullName: string;
+  educationLevel?: string; geminiApiKey?: string; openRouterApiKey?: string;
+  preferredProvider?: 'openrouter' | 'gemini'; openRouterModel?: string; createdAt: string;
 }
-
 export interface Document {
-  id: string;
-  userId: string;
-  title: string;
-  originalFilename: string;
-  mimetype: string;
-  fileSize: number;
-  wordCount: number;
-  characterCount: number;
-  pageCount?: number;
-  extractedText: string;
-  snippet: string;
-  createdAt: string;
+  id: string; userId: string; title: string; originalFilename: string; mimetype: string;
+  fileSize: number; wordCount: number; characterCount: number; pageCount?: number;
+  extractedText: string; snippet: string; createdAt: string;
 }
-
 export interface Summary {
-  id: string;
-  userId: string;
-  documentId?: string;
-  title: string;
+  id: string; userId: string; documentId?: string; title: string;
   summaryType: 'concise' | 'standard' | 'detailed' | 'very_detailed';
-  content: string;
-  keyPoints: string[];
-  wordCount: number;
-  createdAt: string;
+  content: string; keyPoints: string[]; wordCount: number; createdAt: string;
 }
-
 export interface QuizQuestion {
-  id: string;
-  question: string;
-  type: 'multiple_choice' | 'true_false';
-  options: string[];
-  correctAnswerIndex: number;
-  explanation: string;
-  topic?: string;
+  id: string; question: string; type: 'multiple_choice' | 'true_false'; options: string[];
+  correctAnswerIndex: number; explanation: string; topic?: string;
 }
-
 export interface Quiz {
-  id: string;
-  userId: string;
-  documentId?: string;
-  summaryId?: string;
-  title: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  questionCount: number;
-  questionType: 'multiple_choice' | 'true_false' | 'mixed';
-  questions: QuizQuestion[];
-  createdAt: string;
+  id: string; userId: string; documentId?: string; summaryId?: string; title: string;
+  difficulty: 'easy' | 'medium' | 'hard'; questionCount: number;
+  questionType: 'multiple_choice' | 'true_false' | 'mixed'; questions: QuizQuestion[]; createdAt: string;
 }
-
 export interface QuizAttempt {
-  id: string;
-  userId: string;
-  quizId: string;
-  quizTitle: string;
-  score: number;
-  totalQuestions: number;
-  percentage: number;
-  userAnswers: Record<string, number>; // questionId -> selectedIndex
-  timeSpentSeconds: number;
-  completedAt: string;
+  id: string; userId: string; quizId: string; quizTitle: string; score: number;
+  totalQuestions: number; percentage: number; userAnswers: Record<string, number>;
+  timeSpentSeconds: number; completedAt: string;
 }
 
-interface DatabaseSchema {
-  users: User[];
-  documents: Document[];
-  summaries: Summary[];
-  quizzes: Quiz[];
-  quizAttempts: QuizAttempt[];
+const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || 'studymate-135bf';
+
+function initializeFirebaseAdmin() {
+  if (getApps().length) return;
+  const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (rawServiceAccount) {
+    try {
+      const serviceAccount = JSON.parse(rawServiceAccount);
+      if (serviceAccount.private_key) {
+        serviceAccount.private_key = String(serviceAccount.private_key).replace(/\\n/g, '\n');
+      }
+      initializeApp({ credential: cert(serviceAccount), projectId });
+      return;
+    } catch (error) {
+      console.error('FIREBASE_SERVICE_ACCOUNT_JSON is not valid service-account JSON.');
+      throw new Error('Firebase configuration error: check FIREBASE_SERVICE_ACCOUNT_JSON in your server secrets.');
+    }
+  }
+
+  // Cloud Run and other Google Cloud hosts can provide Application Default Credentials.
+  // Local development can set GOOGLE_APPLICATION_CREDENTIALS to a private JSON file path.
+  initializeApp({ credential: applicationDefault(), projectId });
 }
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
-const DB_FILE = path.join(DATA_DIR, 'studymate_db.json');
+initializeFirebaseAdmin();
+const firestore: Firestore = getFirestore();
+firestore.settings({ ignoreUndefinedProperties: true });
 
+export async function checkFirestoreConnection(): Promise<void> {
+  await firestore.collection('users').limit(1).get();
+}
+
+type CollectionName = 'users' | 'documents' | 'summaries' | 'quizzes' | 'quizAttempts';
 class Database {
-  private data: DatabaseSchema = {
-    users: [],
-    documents: [],
-    summaries: [],
-    quizzes: [],
-    quizAttempts: [],
-  };
-  private isLoaded = false;
-
-  constructor() {
-    this.init();
+  private collection(name: CollectionName) { return firestore.collection(name); }
+  private async all<T>(name: CollectionName): Promise<T[]> {
+    const snap = await this.collection(name).get();
+    return snap.docs.map((doc) => ({ ...doc.data(), id: doc.id }) as T);
   }
-
-  private init() {
-    try {
-      if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
-      }
-      if (fs.existsSync(DB_FILE)) {
-        const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        this.data = JSON.parse(raw);
-      } else {
-        this.persist();
-      }
-      this.isLoaded = true;
-    } catch (e) {
-      console.error('Error initializing database:', e);
-      this.persist();
-    }
+  private async findById<T>(name: CollectionName, id: string): Promise<T | undefined> {
+    const snap = await this.collection(name).doc(id).get();
+    return snap.exists ? ({ ...snap.data(), id: snap.id } as T) : undefined;
   }
-
-  private persist() {
-    try {
-      if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
-      }
-      const tmpFile = `${DB_FILE}.tmp.${Date.now()}`;
-      fs.writeFileSync(tmpFile, JSON.stringify(this.data, null, 2), 'utf-8');
-      fs.renameSync(tmpFile, DB_FILE);
-    } catch (e) {
-      console.error('Error persisting database:', e);
-    }
+  private async add<T extends {id:string}>(name: CollectionName, value: T): Promise<T> {
+    await this.collection(name).doc(value.id).set(value);
+    return value;
   }
-
-  // --- Users ---
-  getUserById(id: string): User | undefined {
-    return this.data.users.find(u => u.id === id);
+  private async update<T extends {id:string}>(name: CollectionName, id: string, updates: Partial<T>): Promise<T | undefined> {
+    const ref = this.collection(name).doc(id);
+    const snap = await ref.get();
+    if (!snap.exists) return undefined;
+    await ref.set(updates, { merge: true });
+    return { ...snap.data(), ...updates, id } as T;
   }
-
-  getUserByEmail(email: string): User | undefined {
-    return this.data.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  private async removeOwned(name: CollectionName, id: string, userId: string): Promise<boolean> {
+    const ref = this.collection(name).doc(id);
+    const snap = await ref.get();
+    if (!snap.exists || snap.get('userId') !== userId) return false;
+    await ref.delete();
+    return true;
   }
-
-  createUser(user: Omit<User, 'id' | 'createdAt'>): User {
-    const newUser: User = {
-      id: crypto.randomUUID(),
-      ...user,
-      createdAt: new Date().toISOString(),
-    };
-    this.data.users.push(newUser);
-    this.persist();
-    return newUser;
+  async getUserById(id: string) { return this.findById<User>('users', id); }
+  async getUserByEmail(email: string) {
+    const normalized = email.trim().toLowerCase();
+    const snap = await this.collection('users').where('email', '==', normalized).limit(1).get();
+    return snap.empty ? undefined : ({ ...snap.docs[0].data(), id: snap.docs[0].id } as User);
   }
-
-  updateUser(id: string, updates: Partial<User>): User | undefined {
-    const idx = this.data.users.findIndex(u => u.id === id);
-    if (idx === -1) return undefined;
-    this.data.users[idx] = { ...this.data.users[idx], ...updates };
-    this.persist();
-    return this.data.users[idx];
+  async createUser(user: Omit<User, 'id'|'createdAt'>) {
+    const value: User = { id: crypto.randomUUID(), ...user, email: user.email.trim().toLowerCase(), createdAt: new Date().toISOString() };
+    return this.add('users', value);
   }
-
-  // --- Documents ---
-  getDocuments(userId: string): Document[] {
-    return this.data.documents
-      .filter(d => d.userId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  async updateUser(id: string, updates: Partial<User>) { return this.update<User>('users', id, updates); }
+  async getDocuments(userId: string) { return this.sortedOwned<Document>('documents', userId, 'createdAt'); }
+  async getDocumentById(id: string, userId: string) {
+    const item = await this.findById<Document>('documents', id);
+    return item?.userId === userId ? item : undefined;
   }
-
-  getDocumentById(id: string, userId: string): Document | undefined {
-    return this.data.documents.find(d => d.id === id && d.userId === userId);
+  async createDocument(value: Omit<Document, 'id'|'createdAt'>) {
+    return this.add('documents', { id: crypto.randomUUID(), ...value, createdAt: new Date().toISOString() });
   }
-
-  createDocument(doc: Omit<Document, 'id' | 'createdAt'>): Document {
-    const newDoc: Document = {
-      id: crypto.randomUUID(),
-      ...doc,
-      createdAt: new Date().toISOString(),
-    };
-    this.data.documents.push(newDoc);
-    this.persist();
-    return newDoc;
+  async deleteDocument(id: string, userId: string) { return this.removeOwned('documents', id, userId); }
+  async getSummaries(userId: string) { return this.sortedOwned<Summary>('summaries', userId, 'createdAt'); }
+  async getSummaryById(id: string, userId: string) {
+    const item = await this.findById<Summary>('summaries', id);
+    return item?.userId === userId ? item : undefined;
   }
-
-  deleteDocument(id: string, userId: string): boolean {
-    const initialLen = this.data.documents.length;
-    this.data.documents = this.data.documents.filter(d => !(d.id === id && d.userId === userId));
-    const deleted = this.data.documents.length < initialLen;
-    if (deleted) this.persist();
-    return deleted;
+  async createSummary(value: Omit<Summary, 'id'|'createdAt'>) {
+    return this.add('summaries', { id: crypto.randomUUID(), ...value, createdAt: new Date().toISOString() });
   }
-
-  // --- Summaries ---
-  getSummaries(userId: string): Summary[] {
-    return this.data.summaries
-      .filter(s => s.userId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  async deleteSummary(id: string, userId: string) { return this.removeOwned('summaries', id, userId); }
+  async getQuizzes(userId: string) { return this.sortedOwned<Quiz>('quizzes', userId, 'createdAt'); }
+  async getQuizById(id: string, userId: string) {
+    const item = await this.findById<Quiz>('quizzes', id);
+    return item?.userId === userId ? item : undefined;
   }
-
-  getSummaryById(id: string, userId: string): Summary | undefined {
-    return this.data.summaries.find(s => s.id === id && s.userId === userId);
+  async createQuiz(value: Omit<Quiz, 'id'|'createdAt'>) {
+    return this.add('quizzes', { id: crypto.randomUUID(), ...value, createdAt: new Date().toISOString() });
   }
-
-  createSummary(summary: Omit<Summary, 'id' | 'createdAt'>): Summary {
-    const newSummary: Summary = {
-      id: crypto.randomUUID(),
-      ...summary,
-      createdAt: new Date().toISOString(),
-    };
-    this.data.summaries.push(newSummary);
-    this.persist();
-    return newSummary;
+  async deleteQuiz(id: string, userId: string) { return this.removeOwned('quizzes', id, userId); }
+  async getQuizAttempts(userId: string) {
+    return (await this.all<QuizAttempt>('quizAttempts')).filter(a => a.userId === userId)
+      .sort((a,b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
   }
-
-  deleteSummary(id: string, userId: string): boolean {
-    const initialLen = this.data.summaries.length;
-    this.data.summaries = this.data.summaries.filter(s => !(s.id === id && s.userId === userId));
-    const deleted = this.data.summaries.length < initialLen;
-    if (deleted) this.persist();
-    return deleted;
+  async getAttemptsForQuiz(quizId: string, userId: string) {
+    return (await this.all<QuizAttempt>('quizAttempts')).filter(a => a.quizId === quizId && a.userId === userId)
+      .sort((a,b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
   }
-
-  // --- Quizzes ---
-  getQuizzes(userId: string): Quiz[] {
-    return this.data.quizzes
-      .filter(q => q.userId === userId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  async createQuizAttempt(value: Omit<QuizAttempt, 'id'|'completedAt'>) {
+    return this.add('quizAttempts', { id: crypto.randomUUID(), ...value, completedAt: new Date().toISOString() });
   }
-
-  getQuizById(id: string, userId: string): Quiz | undefined {
-    return this.data.quizzes.find(q => q.id === id && q.userId === userId);
-  }
-
-  createQuiz(quiz: Omit<Quiz, 'id' | 'createdAt'>): Quiz {
-    const newQuiz: Quiz = {
-      id: crypto.randomUUID(),
-      ...quiz,
-      createdAt: new Date().toISOString(),
-    };
-    this.data.quizzes.push(newQuiz);
-    this.persist();
-    return newQuiz;
-  }
-
-  deleteQuiz(id: string, userId: string): boolean {
-    const initialLen = this.data.quizzes.length;
-    this.data.quizzes = this.data.quizzes.filter(q => !(q.id === id && q.userId === userId));
-    const deleted = this.data.quizzes.length < initialLen;
-    if (deleted) this.persist();
-    return deleted;
-  }
-
-  // --- Quiz Attempts ---
-  getQuizAttempts(userId: string): QuizAttempt[] {
-    return this.data.quizAttempts
-      .filter(a => a.userId === userId)
-      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
-  }
-
-  getAttemptsForQuiz(quizId: string, userId: string): QuizAttempt[] {
-    return this.data.quizAttempts
-      .filter(a => a.quizId === quizId && a.userId === userId)
-      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
-  }
-
-  createQuizAttempt(attempt: Omit<QuizAttempt, 'id' | 'completedAt'>): QuizAttempt {
-    const newAttempt: QuizAttempt = {
-      id: crypto.randomUUID(),
-      ...attempt,
-      completedAt: new Date().toISOString(),
-    };
-    this.data.quizAttempts.push(newAttempt);
-    this.persist();
-    return newAttempt;
-  }
-
-  // --- Stats ---
-  getUserStats(userId: string) {
-    const docs = this.data.documents.filter(d => d.userId === userId);
-    const summaries = this.data.summaries.filter(s => s.userId === userId);
-    const quizzes = this.data.quizzes.filter(q => q.userId === userId);
-    const attempts = this.data.quizAttempts.filter(a => a.userId === userId);
-
-    const totalScore = attempts.reduce((acc, a) => acc + a.score, 0);
-    const totalPossible = attempts.reduce((acc, a) => acc + a.totalQuestions, 0);
-    const avgScore = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
-
+  async getUserStats(userId: string) {
+    const [docs, summaries, quizzes, attempts] = await Promise.all([
+      this.getDocuments(userId), this.getSummaries(userId), this.getQuizzes(userId), this.getQuizAttempts(userId)
+    ]);
+    const totalScore = attempts.reduce((sum, a) => sum + a.score, 0);
+    const totalPossible = attempts.reduce((sum, a) => sum + a.totalQuestions, 0);
     return {
-      totalDocuments: docs.length,
-      totalSummaries: summaries.length,
-      totalQuizzes: quizzes.length,
+      totalDocuments: docs.length, totalSummaries: summaries.length, totalQuizzes: quizzes.length,
       totalAttempts: attempts.length,
-      averageScore: avgScore,
+      averageScore: totalPossible ? Math.round((totalScore / totalPossible) * 100) : 0,
       latestAttempts: attempts.slice(0, 5),
     };
   }
+  private async sortedOwned<T extends {userId:string}>(name: CollectionName, userId: string, dateKey: 'createdAt'|'completedAt'): Promise<T[]> {
+    return (await this.all<T>(name)).filter(item => item.userId === userId)
+      .sort((a,b) => new Date(String((b as any)[dateKey])).getTime() - new Date(String((a as any)[dateKey])).getTime());
+  }
 }
-
 export const db = new Database();
