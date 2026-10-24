@@ -1,0 +1,186 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default-deny all queries and writes
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Health check probe collection for initial client connectivity test
+    match /test/{docId} {
+      allow get: if true;
+    }
+
+    // Reusable Global Security Helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Schema Validation Helpers
+    function isValidUser(data, userId) {
+      return data.id == userId
+        && data.id is string
+        && isValidId(data.id)
+        && data.email is string
+        && data.email.size() <= 256
+        && data.fullName is string
+        && data.fullName.size() >= 1
+        && data.fullName.size() <= 128
+        && (!('educationLevel' in data) || (data.educationLevel is string && data.educationLevel.size() <= 64))
+        && (!('preferredProvider' in data) || data.preferredProvider in ['gemini', 'openrouter'])
+        && (!('geminiApiKey' in data) || (data.geminiApiKey is string && data.geminiApiKey.size() <= 256))
+        && (!('openRouterApiKey' in data) || (data.openRouterApiKey is string && data.openRouterApiKey.size() <= 256))
+        && (!('openRouterModel' in data) || (data.openRouterModel is string && data.openRouterModel.size() <= 128))
+        && data.createdAt is string
+        && data.createdAt.size() <= 64;
+    }
+
+    function isValidDocument(data, userId) {
+      return data.id is string
+        && isValidId(data.id)
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 256
+        && data.originalFilename is string
+        && data.originalFilename.size() <= 256
+        && data.extractedText is string
+        && data.extractedText.size() <= 500000
+        && (!('snippet' in data) || (data.snippet is string && data.snippet.size() <= 1000))
+        && data.createdAt is string
+        && data.createdAt.size() <= 64;
+    }
+
+    function isValidSummary(data, userId) {
+      return data.id is string
+        && isValidId(data.id)
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 256
+        && data.summaryType in ['concise', 'standard', 'detailed', 'very_detailed']
+        && data.content is string
+        && data.content.size() <= 500000
+        && data.keyPoints is list
+        && data.keyPoints.size() <= 50
+        && data.createdAt is string
+        && data.createdAt.size() <= 64;
+    }
+
+    function isValidQuiz(data, userId) {
+      return data.id is string
+        && isValidId(data.id)
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 256
+        && data.difficulty in ['easy', 'medium', 'hard']
+        && data.questionCount is number
+        && data.questionCount >= 1
+        && data.questionCount <= 50
+        && data.questions is list
+        && data.questions.size() >= 1
+        && data.questions.size() <= 50
+        && data.createdAt is string
+        && data.createdAt.size() <= 64;
+    }
+
+    function isValidQuizAttempt(data, userId) {
+      return data.id is string
+        && isValidId(data.id)
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.quizId is string
+        && isValidId(data.quizId)
+        && data.quizTitle is string
+        && data.quizTitle.size() <= 256
+        && data.score is number
+        && data.score >= 0
+        && data.totalQuestions is number
+        && data.totalQuestions >= 1
+        && data.score <= data.totalQuestions
+        && data.completedAt is string
+        && data.completedAt.size() <= 64;
+    }
+
+    // User Profile Document
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming(), userId);
+      allow update: if isOwner(userId) && isValidId(userId)
+        && isValidUser(incoming(), userId)
+        && incoming().id == existing().id
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // User Study Documents Subcollection
+      match /documents/{documentId} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(documentId);
+        allow list: if isOwner(userId) && isValidId(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(documentId) && isValidDocument(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(documentId)
+          && isValidDocument(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt;
+      }
+
+      // User AI Summaries Subcollection
+      match /summaries/{summaryId} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(summaryId);
+        allow list: if isOwner(userId) && isValidId(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(summaryId) && isValidSummary(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(summaryId)
+          && isValidSummary(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt;
+      }
+
+      // User AI Quizzes Subcollection
+      match /quizzes/{quizId} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(quizId);
+        allow list: if isOwner(userId) && isValidId(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(quizId) && isValidQuiz(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(quizId)
+          && isValidQuiz(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt;
+      }
+
+      // User Quiz Attempts Subcollection
+      match /quizAttempts/{attemptId} {
+        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(attemptId);
+        allow list: if isOwner(userId) && isValidId(userId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(attemptId) && isValidQuizAttempt(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(userId) && isValidId(attemptId)
+          && isValidQuizAttempt(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId
+          && incoming().completedAt == existing().completedAt;
+      }
+    }
+  }
+}
