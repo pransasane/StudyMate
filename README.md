@@ -75,7 +75,7 @@ For developers working directly with the GitHub repository, a dedicated, standal
 👉 **`ai-api.ts`**
 
 ### Features:
-- **Direct Google GenAI SDK**: Implements `@google/genai` with the official, high-performance `gemini-3.6-flash` model.
+- **Direct Google GenAI SDK**: Implements `@google/genai` with the official, high-performance `gemini-3.8-flash` model.
 - **Standalone Execution**: You can test the AI API directly via command line:
   ```bash
   npx tsx ai-api.ts
