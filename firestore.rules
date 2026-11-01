@@ -65,7 +65,7 @@ service cloud.firestore {
         && data.originalFilename is string
         && data.originalFilename.size() <= 256
         && data.extractedText is string
-        && data.extractedText.size() <= 500000
+        && data.extractedText.size() <= 690000
         && (!('snippet' in data) || data.snippet == null || (data.snippet is string && data.snippet.size() <= 1000))
         && (!('mimetype' in data) || (data.mimetype is string && data.mimetype.size() <= 128))
         && (!('fileSize' in data) || data.fileSize is number)

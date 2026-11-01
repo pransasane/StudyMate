@@ -34,7 +34,7 @@ const upload = multer({
 });
 
 const api = express.Router();
-const MAX_FIRESTORE_DOCUMENT_BYTES = 700 * 1024;
+const MAX_FIRESTORE_DOCUMENT_BYTES = 670 * 1024;
 const MAX_AI_SOURCE_CHARACTERS = 120000;
 
 function getAISettings(body: any) {

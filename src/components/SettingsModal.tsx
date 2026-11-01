@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.js';
 import { api } from '../services/api.js';
 import {
@@ -44,6 +44,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Rehydrate settings from the signed-in Firestore profile when the modal opens.
+  useEffect(() => {
+    if (!isOpen || !user) return;
+    setFullName(user.fullName || '');
+    setEducationLevel(user.educationLevel || 'College / University');
+    setGeminiApiKey(user.geminiApiKey || '');
+    setOpenRouterApiKey(user.openRouterApiKey || '');
+    setPreferredProvider(user.preferredProvider || (configStatus?.geminiAvailable ? 'gemini' : 'openrouter'));
+    setOpenRouterModel(user.openRouterModel || 'google/gemini-2.0-flash-001');
+  }, [isOpen, user?.id]);
 
   if (!isOpen || !user) return null;
 

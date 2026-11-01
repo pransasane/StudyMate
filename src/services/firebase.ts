@@ -65,7 +65,7 @@ function cleanForFirestore<T extends Record<string, any>>(value: T): T {
 
 function ensureDocumentFitsFirestore(document: Document): void {
   const bytes = new TextEncoder().encode(JSON.stringify(document)).length;
-  if (bytes > 700 * 1024) {
+  if (bytes > 670 * 1024) {
     throw new Error('This extracted document is too large for a single Firestore record. Split it into smaller chapters before saving.');
   }
 }
