@@ -194,7 +194,7 @@ export async function testGeminiConnection(apiKey?: string): Promise<{ success: 
  * Test OpenRouter connection
  */
 export async function testOpenRouterConnection(apiKey: string, model?: string): Promise<{ success: boolean; message: string }> {
-  const testModel = model || 'google/gemini-3.5-flash';
+  const testModel = !model || model === 'google/gemini-2.0-flash-001' ? 'google/gemini-3.5-flash' : model;
   const res = await callOpenRouter(apiKey, testModel, 'Respond with the word: CONNECTED');
   return {
     success: true,
@@ -376,6 +376,9 @@ export function generateFallbackQuiz(
  */
 export async function generateSummary(options: GenerateSummaryOptions): Promise<SummaryResult> {
   const { text, title, summaryType, geminiApiKey, openRouterApiKey, preferredProvider, openRouterModel } = options;
+  const selectedOpenRouterModel = !openRouterModel || openRouterModel === 'google/gemini-2.0-flash-001'
+    ? 'google/gemini-3.5-flash'
+    : openRouterModel;
 
   const lengthInstructions = {
     concise: 'Generate a CONCISE, high-yield summary (~350 to 450 words) targeting core concepts and quick review.',
@@ -425,7 +428,7 @@ Please produce the comprehensive StudyMate summary now.`;
   if (useOpenRouter && effectiveOpenRouterKey) {
     try {
       providerUsed = 'openrouter';
-      modelUsed = openRouterModel || 'google/gemini-3.5-flash';
+      modelUsed = selectedOpenRouterModel;
       rawOutput = await callOpenRouter(effectiveOpenRouterKey, modelUsed, userPrompt, systemPrompt);
     } catch (err: any) {
       if (effectiveGeminiKey) {
@@ -453,7 +456,7 @@ Please produce the comprehensive StudyMate summary now.`;
         console.warn(`Gemini failed (${geminiErr.message}). Trying OpenRouter fallback...`);
         try {
           providerUsed = 'openrouter';
-          modelUsed = openRouterModel || 'google/gemini-3.5-flash';
+          modelUsed = selectedOpenRouterModel;
           rawOutput = await callOpenRouter(effectiveOpenRouterKey, modelUsed, userPrompt, systemPrompt);
         } catch (orErr: any) {
           throw new Error(`Gemini and OpenRouter AI requests failed. Gemini: ${geminiErr.message}. OpenRouter: ${orErr.message}`);
@@ -506,6 +509,9 @@ Please produce the comprehensive StudyMate summary now.`;
  */
 export async function generateQuiz(options: GenerateQuizOptions): Promise<QuizResult> {
   const { text, title, questionCount, difficulty, questionType, geminiApiKey, openRouterApiKey, preferredProvider, openRouterModel } = options;
+  const selectedOpenRouterModel = !openRouterModel || openRouterModel === 'google/gemini-2.0-flash-001'
+    ? 'google/gemini-3.5-flash'
+    : openRouterModel;
 
   const typeDesc = {
     multiple_choice: 'ALL questions must be Multiple Choice questions with exactly 4 options (options array of 4 distinct answers).',
@@ -571,7 +577,7 @@ Output the JSON object now:`;
   if (useOpenRouter && effectiveOpenRouterKey) {
     try {
       providerUsed = 'openrouter';
-      modelUsed = openRouterModel || 'google/gemini-3.5-flash';
+      modelUsed = selectedOpenRouterModel;
       rawOutput = await callOpenRouter(effectiveOpenRouterKey, modelUsed, userPrompt, systemPrompt);
     } catch (err: any) {
       if (effectiveGeminiKey) {
@@ -599,7 +605,7 @@ Output the JSON object now:`;
         console.warn(`Gemini quiz failed (${geminiErr.message}). Trying OpenRouter...`);
         try {
           providerUsed = 'openrouter';
-          modelUsed = openRouterModel || 'google/gemini-3.5-flash';
+          modelUsed = selectedOpenRouterModel;
           rawOutput = await callOpenRouter(effectiveOpenRouterKey, modelUsed, userPrompt, systemPrompt);
         } catch (orErr: any) {
           throw new Error(`Gemini and OpenRouter quiz requests failed. Gemini: ${geminiErr.message}. OpenRouter: ${orErr.message}`);
