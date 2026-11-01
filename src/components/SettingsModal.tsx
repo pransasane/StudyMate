@@ -31,7 +31,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     user?.preferredProvider || (configStatus?.geminiAvailable ? 'gemini' : 'openrouter')
   );
   const [openRouterModel, setOpenRouterModel] = useState(
-    user?.openRouterModel || 'google/gemini-3.5-flash'
+    (user?.openRouterModel && user.openRouterModel !== 'google/gemini-2.0-flash-001') ? user.openRouterModel : 'google/gemini-3.5-flash'
   );
 
   // Testing states
@@ -53,7 +53,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     setGeminiApiKey(user.geminiApiKey || '');
     setOpenRouterApiKey(user.openRouterApiKey || '');
     setPreferredProvider(user.preferredProvider || (configStatus?.geminiAvailable ? 'gemini' : 'openrouter'));
-    setOpenRouterModel(user.openRouterModel || 'google/gemini-3.5-flash');
+    setOpenRouterModel((user.openRouterModel && user.openRouterModel !== 'google/gemini-2.0-flash-001') ? user.openRouterModel : 'google/gemini-3.5-flash');
   }, [isOpen, user?.id]);
 
   if (!isOpen || !user) return null;
