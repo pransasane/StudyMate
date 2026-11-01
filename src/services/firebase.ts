@@ -1,5 +1,6 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getStorage, ref, uploadBytes, deleteObject, getDownloadURL } from 'firebase/storage';
 import {
   getFirestore,
   doc,
@@ -20,6 +21,7 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 // StudyMate intentionally uses its named Firestore database configured in Firebase.
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
+export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 
 export enum OperationType {
@@ -156,11 +158,73 @@ export const firestoreService = {
     }
   },
 
+  /**
+   * Preserve the uploaded original in the owner's private Firebase Storage folder,
+   * then save the storage path beside its extracted text in Firestore.
+   * If the Firestore write fails, remove the uploaded object to avoid an orphan.
+   */
+  async saveUploadedDocument(userId: string, document: Document, file: File): Promise<Document> {
+    assertOwner(userId);
+    const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'study-material';
+    const storagePath = `users/${userId}/documents/${document.id}/${safeFileName}`;
+    const fileRef = ref(storage, storagePath);
+    let uploaded = false;
+
+    try {
+      await uploadBytes(fileRef, file, {
+        contentType: file.type || 'application/octet-stream',
+        customMetadata: {
+          ownerUid: userId,
+          documentId: document.id,
+        },
+      });
+      uploaded = true;
+
+      const savedDocument: Document = { ...document, userId, storagePath };
+      await this.saveDocument(userId, savedDocument);
+      return savedDocument;
+    } catch (error) {
+      if (uploaded) {
+        try {
+          await deleteObject(fileRef);
+        } catch (cleanupError) {
+          console.warn('Unable to remove uncommitted Storage upload:', cleanupError);
+        }
+      }
+      throw error;
+    }
+  },
+
+  async getOriginalDownloadUrl(userId: string, storagePath: string): Promise<string> {
+    assertOwner(userId);
+    if (!storagePath.startsWith(`users/${userId}/documents/`)) {
+      throw new Error('The file path does not belong to the signed-in user.');
+    }
+    try {
+      return await getDownloadURL(ref(storage, storagePath));
+    } catch (error) {
+      throw firestoreError(error, OperationType.GET, storagePath);
+    }
+  },
+
   async deleteDocument(userId: string, documentId: string): Promise<void> {
     assertOwner(userId);
     const path = `users/${userId}/documents/${documentId}`;
     try {
-      await deleteDoc(doc(db, 'users', userId, 'documents', documentId));
+      const documentReference = doc(db, 'users', userId, 'documents', documentId);
+      const snapshot = await getDoc(documentReference);
+      const storagePath = snapshot.exists() ? (snapshot.data() as Document).storagePath : undefined;
+
+      // Remove the Firestore record first; a failed Storage cleanup cannot leave
+      // the deleted document visible in the user's study library.
+      await deleteDoc(documentReference);
+      if (storagePath && storagePath.startsWith(`users/${userId}/documents/`)) {
+        try {
+          await deleteObject(ref(storage, storagePath));
+        } catch (storageError) {
+          console.warn('Original file cleanup failed after Firestore deletion:', storageError);
+        }
+      }
     } catch (error) {
       throw firestoreError(error, OperationType.DELETE, path);
     }

@@ -102,7 +102,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
       if (!user) throw new Error('Please sign in before uploading study material.');
       const res = await api.uploadDocument(file, docTitle);
-      await firestoreService.saveDocument(user.id, res.document);
+      await firestoreService.saveUploadedDocument(user.id, res.document, file);
       clearInterval(progressTimer);
       setProgress(100);
       setExtractedDoc(res.document);

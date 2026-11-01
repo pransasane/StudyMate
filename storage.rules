@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isValidStudyFile(documentId) {
+      return request.resource != null
+        && request.resource.size <= 25 * 1024 * 1024
+        && request.resource.contentType in [
+          'application/pdf',
+          'text/plain',
+          'text/markdown',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/msword',
+          'application/octet-stream'
+        ]
+        && request.resource.metadata.ownerUid == request.auth.uid
+        && request.resource.metadata.documentId == documentId;
+    }
+
+    // Each original source file belongs to exactly one Firebase Auth user.
+    // Users cannot read, replace, upload, or delete another user's documents.
+    match /users/{userId}/documents/{documentId}/{fileName} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidStudyFile(documentId);
+      allow delete: if isOwner(userId);
+    }
+
+    // Default deny for every other Storage object.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
