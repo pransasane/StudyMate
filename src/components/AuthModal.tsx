@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.js';
 import { X, Sparkles, Mail, Lock, User as UserIcon, GraduationCap, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -28,6 +28,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // The same modal instance is reused for sign-in and sign-up. Keep its
+  // visible form synchronized with the mode requested by the parent.
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      setError(null);
+      setSuccessMsg(null);
+    }
+  }, [initialMode, isOpen]);
 
   if (!isOpen) return null;
 
