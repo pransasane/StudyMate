@@ -132,17 +132,15 @@ async function callGemini(
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  const modelsToTry = [
-    'gemini-3.8-flash',
-    'gemini-flash-latest',
-  ];
+  // Stable Gemini models with a bounded timeout for normal generation latency.
+  const modelsToTry = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
 
   let lastError: any = null;
 
   for (const model of modelsToTry) {
     try {
       const config: any = {
-        abortSignal: AbortSignal.timeout(9000),
+        abortSignal: AbortSignal.timeout(18000),
       };
       if (systemInstruction) {
         config.systemInstruction = systemInstruction;
@@ -438,12 +436,10 @@ Please produce the comprehensive StudyMate summary now.`;
           rawOutput = geminiRes.text;
           modelUsed = geminiRes.modelUsed;
         } catch (geminiErr: any) {
-          console.warn(`Gemini fallback also failed: ${geminiErr.message}. Generating fallback summary.`);
-          return generateFallbackSummary(text, title, summaryType);
+          throw new Error(`Both AI providers failed. Gemini: ${geminiErr.message}`);
         }
       } else {
-        console.warn(`OpenRouter failed: ${err.message}. Generating structured academic summary...`);
-        return generateFallbackSummary(text, title, summaryType);
+        throw new Error(`OpenRouter AI request failed: ${err.message}`);
       }
     }
   } else if (effectiveGeminiKey) {
@@ -460,17 +456,14 @@ Please produce the comprehensive StudyMate summary now.`;
           modelUsed = openRouterModel || 'google/gemini-2.0-flash-001';
           rawOutput = await callOpenRouter(effectiveOpenRouterKey, modelUsed, userPrompt, systemPrompt);
         } catch (orErr: any) {
-          console.warn(`OpenRouter also failed: ${orErr.message}. Generating structured academic summary.`);
-          return generateFallbackSummary(text, title, summaryType);
+          throw new Error(`Gemini and OpenRouter AI requests failed. Gemini: ${geminiErr.message}. OpenRouter: ${orErr.message}`);
         }
       } else {
-        console.warn(`Gemini failed: ${geminiErr.message}. Generating structured academic summary.`);
-        return generateFallbackSummary(text, title, summaryType);
+        throw new Error(`Gemini AI request failed: ${geminiErr.message}`);
       }
     }
   } else {
-    console.warn('No external API key configured. Generating structured academic summary directly from document text.');
-    return generateFallbackSummary(text, title, summaryType);
+    throw new Error('No AI API key is configured. Add a Gemini API key in Vercel or StudyMate Settings.');
   }
 
   // Extract key points
@@ -589,12 +582,10 @@ Output the JSON object now:`;
           rawOutput = geminiRes.text;
           modelUsed = geminiRes.modelUsed;
         } catch (geminiErr: any) {
-          console.warn(`Gemini quiz failed: ${geminiErr.message}. Generating fallback quiz.`);
-          return generateFallbackQuiz(text, title, questionCount, difficulty, questionType);
+          throw new Error(`Both AI providers failed. Gemini: ${geminiErr.message}`);
         }
       } else {
-        console.warn(`OpenRouter quiz failed: ${err.message}. Generating fallback quiz.`);
-        return generateFallbackQuiz(text, title, questionCount, difficulty, questionType);
+        throw new Error(`OpenRouter quiz request failed: ${err.message}`);
       }
     }
   } else if (effectiveGeminiKey) {
@@ -611,17 +602,14 @@ Output the JSON object now:`;
           modelUsed = openRouterModel || 'google/gemini-2.0-flash-001';
           rawOutput = await callOpenRouter(effectiveOpenRouterKey, modelUsed, userPrompt, systemPrompt);
         } catch (orErr: any) {
-          console.warn(`OpenRouter quiz failed: ${orErr.message}. Generating fallback quiz.`);
-          return generateFallbackQuiz(text, title, questionCount, difficulty, questionType);
+          throw new Error(`Gemini and OpenRouter quiz requests failed. Gemini: ${geminiErr.message}. OpenRouter: ${orErr.message}`);
         }
       } else {
-        console.warn(`Gemini quiz failed: ${geminiErr.message}. Generating fallback quiz.`);
-        return generateFallbackQuiz(text, title, questionCount, difficulty, questionType);
+        throw new Error(`Gemini quiz request failed: ${geminiErr.message}`);
       }
     }
   } else {
-    console.warn('No AI API key found. Generating structured academic quiz directly from study material.');
-    return generateFallbackQuiz(text, title, questionCount, difficulty, questionType);
+    throw new Error('No AI API key is configured. Add a Gemini API key in Vercel or StudyMate Settings.');
   }
 
   const cleaned = cleanJsonOutput(rawOutput);
@@ -634,18 +622,15 @@ Output the JSON object now:`;
       try {
         parsed = JSON.parse(match[0]);
       } catch (innerErr: any) {
-        console.warn('Could not parse AI quiz JSON. Generating fallback quiz.');
-        return generateFallbackQuiz(text, title, questionCount, difficulty, questionType);
+        throw new Error('The AI returned an invalid quiz format. Please retry generation.');
       }
     } else {
-      console.warn('Could not find JSON object in AI quiz. Generating fallback quiz.');
-      return generateFallbackQuiz(text, title, questionCount, difficulty, questionType);
+      throw new Error('The AI response did not contain a valid quiz. Please retry generation.');
     }
   }
 
   if (!parsed.questions || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
-    console.warn('AI quiz response contained no questions. Generating fallback quiz.');
-    return generateFallbackQuiz(text, title, questionCount, difficulty, questionType);
+    throw new Error('The AI returned no quiz questions. Please retry generation.');
   }
 
   const validatedQuestions: QuizQuestion[] = parsed.questions.map((q: any, idx: number) => {
