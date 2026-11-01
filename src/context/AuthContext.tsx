@@ -7,6 +7,10 @@ import {
   firestoreService,
 } from '../services/firebase.js';
 import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
   signInWithPopup,
   signOut as firebaseSignOut,
   onAuthStateChanged,
@@ -23,6 +27,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (fullName: string, email: string, password: string, educationLevel?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   updateSettings: (settings: Partial<User>) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -35,8 +40,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(authStorage.getToken());
   const [loading, setLoading] = useState<boolean>(true);
   const [configStatus, setConfigStatus] = useState<ConfigStatus | null>(null);
-  const [isFirebaseConnected, setIsFirebaseConnected] = useState<boolean>(true);
+  const [isFirebaseConnected] = useState<boolean>(true);
   const [isFirebaseUser, setIsFirebaseUser] = useState<boolean>(false);
+
+  // Firebase Auth owns the persistent account. Firestore stores the profile;
+  // the API issues a short-lived app session only after verifying the Firebase ID token.
+  const syncFirebaseProfile = async (
+    fbUser: FirebaseUser,
+    details?: { fullName?: string; educationLevel?: string }
+  ): Promise<User> => {
+    const existingProfile = await firestoreService.getUserProfile(fbUser.uid);
+    const profile: User = {
+      ...(existingProfile || {}),
+      id: fbUser.uid,
+      email: fbUser.email || existingProfile?.email || '',
+      fullName:
+        details?.fullName?.trim() ||
+        fbUser.displayName ||
+        existingProfile?.fullName ||
+        fbUser.email?.split('@')[0] ||
+        'Student',
+      educationLevel:
+        details?.educationLevel ||
+        existingProfile?.educationLevel ||
+        'College / University',
+      preferredProvider: existingProfile?.preferredProvider || 'gemini',
+      createdAt: existingProfile?.createdAt || new Date().toISOString(),
+    };
+
+    await firestoreService.saveUserProfile(profile);
+
+    const idToken = await fbUser.getIdToken();
+    const syncRes = await api.syncFirebaseUser({
+      idToken,
+      fullName: profile.fullName,
+      educationLevel: profile.educationLevel,
+    });
+
+    authStorage.setToken(syncRes.token);
+    setToken(syncRes.token);
+    setUser(profile);
+    setIsFirebaseUser(true);
+    return profile;
+  };
 
   // Fetch server config status
   useEffect(() => {
@@ -45,36 +91,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .catch((err) => console.warn('Could not fetch server config status:', err));
   }, []);
 
-  // Listen to Firebase Auth state changes
+  // Restore a Firebase session after a refresh and obtain a matching API session.
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
         setIsFirebaseUser(true);
         try {
-          // Fetch or initialize profile from Firestore database
-          let profile = await firestoreService.getUserProfile(fbUser.uid);
-          if (!profile) {
-            profile = {
-              id: fbUser.uid,
-              email: fbUser.email || '',
-              fullName: fbUser.displayName || fbUser.email?.split('@')[0] || 'Student',
-              educationLevel: 'College / University',
-              preferredProvider: 'gemini',
-              createdAt: new Date().toISOString(),
-            };
-            await firestoreService.saveUserProfile(profile);
-          }
-
-          // Sync with backend session token
-          const syncRes = await api.syncFirebaseUser({
-            id: profile.id,
-            email: profile.email,
-            fullName: profile.fullName,
-            educationLevel: profile.educationLevel,
-          });
-          authStorage.setToken(syncRes.token);
-          setToken(syncRes.token);
-          setUser(profile);
+          await syncFirebaseProfile(fbUser);
         } catch (e) {
           console.warn('Firebase user sync note:', e);
         } finally {
@@ -82,18 +105,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         setIsFirebaseUser(false);
-        // Fallback: check stored token for standard session
         const storedToken = authStorage.getToken();
-        if (storedToken && !user) {
+        if (storedToken) {
           try {
             const { user: currentUser } = await api.getCurrentUser();
             setUser(currentUser);
             setToken(storedToken);
-          } catch (err) {
+          } catch {
             authStorage.clearToken();
             setUser(null);
             setToken(null);
           }
+        } else {
+          setUser(null);
+          setToken(null);
         }
         setLoading(false);
       }
@@ -102,37 +127,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  // Google Sign-In with Firebase Popup (Recommended in Skill)
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const fbUser = result.user;
-      setIsFirebaseUser(true);
-
-      let profile = await firestoreService.getUserProfile(fbUser.uid);
-      if (!profile) {
-        profile = {
-          id: fbUser.uid,
-          email: fbUser.email || '',
-          fullName: fbUser.displayName || fbUser.email?.split('@')[0] || 'Student',
-          educationLevel: 'College / University',
-          preferredProvider: 'gemini',
-          createdAt: new Date().toISOString(),
-        };
-        await firestoreService.saveUserProfile(profile);
-      }
-
-      const syncRes = await api.syncFirebaseUser({
-        id: profile.id,
-        email: profile.email,
-        fullName: profile.fullName,
-        educationLevel: profile.educationLevel,
-      });
-
-      authStorage.setToken(syncRes.token);
-      setToken(syncRes.token);
-      setUser(profile);
+      await syncFirebaseProfile(result.user);
     } catch (err: any) {
       console.error('Google Sign-In Error:', err);
       throw err;
@@ -142,19 +141,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string) => {
-    const res = await api.login({ email, password });
-    authStorage.setToken(res.token);
-    setToken(res.token);
-    setUser(res.user);
-    setIsFirebaseUser(false);
+    setLoading(true);
+    try {
+      const result = await signInWithEmailAndPassword(auth, email.trim(), password);
+      await syncFirebaseProfile(result.user);
+    } catch (err: any) {
+      console.error('Email Sign-In Error:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const register = async (fullName: string, email: string, password: string, educationLevel?: string) => {
-    const res = await api.register({ fullName, email, password, educationLevel });
-    authStorage.setToken(res.token);
-    setToken(res.token);
-    setUser(res.user);
-    setIsFirebaseUser(false);
+  const register = async (
+    fullName: string,
+    email: string,
+    password: string,
+    educationLevel?: string
+  ) => {
+    setLoading(true);
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      await updateProfile(result.user, { displayName: fullName.trim() });
+      await syncFirebaseProfile(result.user, {
+        fullName: fullName.trim(),
+        educationLevel,
+      });
+    } catch (err: any) {
+      console.error('Email Registration Error:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendPasswordReset = async (email: string) => {
+    await sendPasswordResetEmail(auth, email.trim());
   };
 
   const logout = async () => {
@@ -175,7 +197,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updatedUser = res.user;
     setUser(updatedUser);
 
-    // Save changes to Firestore if user is authenticated with Firebase
     if (auth.currentUser && auth.currentUser.uid === updatedUser.id) {
       await firestoreService.saveUserProfile(updatedUser).catch((e) =>
         console.warn('Firestore profile update warning:', e)
@@ -212,6 +233,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         signInWithGoogle,
+        sendPasswordReset,
         logout,
         updateSettings,
         refreshUser,

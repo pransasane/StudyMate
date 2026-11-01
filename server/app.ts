@@ -80,26 +80,51 @@ api.post('/config/test-openrouter', requireAuth, async (req: AuthenticatedReques
 });
 
 // Auth: Firebase Sync
-api.post('/auth/firebase-sync', (req, res) => {
+api.post('/auth/firebase-sync', async (req, res) => {
   try {
-    const { id, email, fullName, educationLevel } = req.body;
-    if (!id || !email) {
-      return res.status(400).json({ error: 'User id and email are required for Firebase sync.' });
+    const { idToken, fullName, educationLevel } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ error: 'A Firebase sign-in token is required.' });
+    }
+
+    const firebaseApiKey = process.env.FIREBASE_API_KEY;
+    if (!firebaseApiKey) {
+      console.error('FIREBASE_API_KEY is not configured on the server.');
+      return res.status(503).json({ error: 'Firebase authentication is not configured on the server.' });
+    }
+
+    const verificationResponse = await fetch(
+      'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' + encodeURIComponent(firebaseApiKey),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      }
+    );
+
+    if (!verificationResponse.ok) {
+      return res.status(401).json({ error: 'Your sign-in session could not be verified. Please sign in again.' });
+    }
+
+    const verificationData = await verificationResponse.json() as {
+      users?: Array<{ localId?: string; email?: string; displayName?: string }>;
+    };
+    const firebaseUser = verificationData.users?.[0];
+    if (!firebaseUser?.localId || !firebaseUser.email) {
+      return res.status(401).json({ error: 'The Firebase sign-in token is invalid or has expired.' });
     }
 
     const user = db.upsertUser({
-      id,
-      email: email.trim().toLowerCase(),
-      fullName: (fullName || email.split('@')[0]).trim(),
+      id: firebaseUser.localId,
+      email: firebaseUser.email.trim().toLowerCase(),
+      fullName: (fullName || firebaseUser.displayName || firebaseUser.email.split('@')[0]).trim(),
       educationLevel: educationLevel ? educationLevel.trim() : undefined,
     });
 
     const token = generateToken(user);
-    res.json({
-      token,
-      user: sanitizeUser(user),
-    });
+    res.json({ token, user: sanitizeUser(user) });
   } catch (err: any) {
+    console.error('Firebase user sync error:', err);
     res.status(500).json({ error: err.message || 'Firebase user sync failed.' });
   }
 });

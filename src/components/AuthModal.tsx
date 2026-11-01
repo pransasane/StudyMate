@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext.js';
-import { api } from '../services/api.js';
 import { X, Sparkles, Mail, Lock, User as UserIcon, GraduationCap, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface AuthModalProps {
@@ -16,7 +15,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   initialMode = 'login',
   onSuccess,
 }) => {
-  const { login, register, signInWithGoogle } = useAuth();
+  const { login, register, signInWithGoogle, sendPasswordReset } = useAuth();
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
 
   // Form states
@@ -24,7 +23,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [educationLevel, setEducationLevel] = useState('College / University');
-  const [newPassword, setNewPassword] = useState('');
 
   // Status
   const [loading, setLoading] = useState(false);
@@ -63,13 +61,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onClose();
         if (onSuccess) onSuccess();
       } else if (mode === 'forgot') {
-        const res = await api.resetPassword({ email, newPassword });
-        setSuccessMsg(res.message);
-        setTimeout(() => {
-          setMode('login');
-          setPassword(newPassword);
-          setSuccessMsg(null);
-        }, 1500);
+        await sendPasswordReset(email);
+        setSuccessMsg('Password reset instructions have been sent. Please check your inbox.');
       }
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please try again.');
@@ -92,7 +85,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <p className="text-xs text-slate-600 mt-0.5">
               {mode === 'login' && 'Sign in to access your study library and quizzes'}
               {mode === 'register' && 'Start converting your study materials with AI'}
-              {mode === 'forgot' && 'Enter your email and a new password'}
+              {mode === 'forgot' && 'We will email you a secure password reset link'}
             </p>
           </div>
           <button
@@ -234,22 +227,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
           ) : (
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Enter New Password
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type="password"
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Min 6 characters"
-                  className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Enter the email address linked to your StudyMate account. We will send you a secure link to choose a new password.
+            </p>
           )}
 
           <button

@@ -65,7 +65,7 @@ export const api = {
     }),
 
   // Auth
-  syncFirebaseUser: (payload: { id: string; email: string; fullName: string; educationLevel?: string }) =>
+  syncFirebaseUser: (payload: { idToken: string; fullName?: string; educationLevel?: string }) =>
     apiRequest<{ token: string; user: User }>('/api/auth/firebase-sync', {
       method: 'POST',
       body: JSON.stringify(payload),
