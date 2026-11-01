@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <defs>
+    <linearGradient id="fav_blue" x1="60" y1="60" x2="120" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00a0f5" />
+      <stop offset="100%" stop-color="#0052cc" />
+    </linearGradient>
+    <linearGradient id="fav_green" x1="180" y1="60" x2="120" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2dd4bf" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded squircle for crisp favicon display -->
+  <rect width="240" height="240" rx="52" fill="#ffffff" />
+  
+  <g transform="translate(10, 10) scale(0.92)">
+    <!-- Graduation Cap -->
+    <polygon points="120,24 74,48 120,72 166,48" fill="#08182b" />
+    <path d="M92,57 Q120,75 148,57 L146,70 Q120,84 94,70 Z" fill="#0b1e36" />
+    <circle cx="120" cy="48" r="3" fill="#1e3a5f" />
+    <path d="M120,48 Q138,53 158,62" stroke="#08182b" stroke-width="2.5" stroke-linecap="round" fill="none" />
+    <polygon points="156,60 162,63 159,75 155,75" fill="#08182b" />
+
+    <!-- Left Blue Figure -->
+    <circle cx="78" cy="88" r="16" fill="#0284c7" />
+    <path d="M50,114 C70,114 84,124 96,138 C108,154 114,174 116,190 C114,170 108,142 92,114 C106,100 114,76 116,74 C114,82 108,106 98,114 C88,104 72,100 50,114 Z" fill="url(#fav_blue)" />
+
+    <!-- Right Green Figure -->
+    <circle cx="162" cy="88" r="16" fill="#10b981" />
+    <path d="M190,114 C170,114 156,124 144,138 C132,154 126,174 124,190 C126,170 132,142 148,114 C134,100 126,76 124,74 C126,82 132,106 142,114 C152,104 168,100 190,114 Z" fill="url(#fav_green)" />
+
+    <!-- Open Book Pages Left -->
+    <path d="M115,180 C92,160 64,153 52,153 C50,157 50,160 52,162 C65,162 92,168 114,185 Z" fill="#00a0f5" />
+    <path d="M113,186 C88,168 58,161 42,162 C40,166 40,169 42,171 C58,171 88,178 111,192 Z" fill="#0284c7" />
+    <path d="M110,193 C82,178 50,172 38,174 C38,181 42,184 44,186 C58,184 84,189 108,199 Z" fill="#081e3a" />
+    <path d="M38,191 C65,191 94,198 118,208 C116,204 114,201 112,198 C90,190 62,185 38,185 Z" fill="#081e3a" />
+
+    <!-- Open Book Pages Right -->
+    <path d="M125,180 C148,160 176,153 188,153 C190,157 190,160 188,162 C175,162 148,168 126,185 Z" fill="#2dd4bf" />
+    <path d="M127,186 C152,168 182,161 198,162 C200,166 200,169 198,171 C182,171 152,178 129,192 Z" fill="#10b981" />
+    <path d="M130,193 C158,178 190,172 202,174 C202,181 198,184 196,186 C182,184 156,189 132,199 Z" fill="#059669" />
+    <path d="M202,191 C175,191 146,198 122,208 C124,204 126,201 128,198 C150,190 178,185 202,185 Z" fill="#064e3b" />
+  </g>
+</svg>

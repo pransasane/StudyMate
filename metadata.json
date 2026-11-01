@@ -1,0 +1,8 @@
+{
+  "name": "StudyMate",
+  "description": "Learn Smarter. Prepare Better. Achieve More. StudyMate helps students convert their study materials into detailed summaries and interactive quizzes using Artificial Intelligence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

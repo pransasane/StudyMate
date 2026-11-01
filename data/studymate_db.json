@@ -1,0 +1,250 @@
+{
+  "users": [
+    {
+      "id": "b7511e1f-f30d-44ad-9a65-e5417ddee8db",
+      "email": "alex@studymate.edu",
+      "passwordHash": "$2b$10$0LOxB7JKVrANxW.yYFnO7OASB.lW3g5lY2ucfSat8lVZ16knS17ey",
+      "fullName": "Alex Morgan",
+      "educationLevel": "Undergraduate Computer Science & Pre-Med",
+      "preferredProvider": "gemini",
+      "openRouterModel": "google/gemini-2.0-flash-001",
+      "createdAt": "2026-10-14T15:33:58.017Z"
+    }
+  ],
+  "documents": [
+    {
+      "id": "562c2e95-d47e-4356-a3a9-49478ba07899",
+      "userId": "b7511e1f-f30d-44ad-9a65-e5417ddee8db",
+      "title": "Cellular Respiration & ATP Synthesis",
+      "originalFilename": "cellular_respiration_notes.txt",
+      "mimetype": "text/plain",
+      "fileSize": 4210,
+      "wordCount": 512,
+      "characterCount": 3105,
+      "extractedText": "Cellular Respiration and ATP Synthesis: Comprehensive Biological Mechanisms\n\n1. Overview of Cellular Respiration\nCellular respiration is the catabolic biochemical pathway by which aerobic organisms extract chemical energy from nutrient molecules (primarily glucose, C6H12O6) and store it in high-energy bonds of adenosine triphosphate (ATP). The overall chemical equation is:\nC6H12O6 + 6 O2 -> 6 CO2 + 6 H2O + ~30 to 32 ATP + heat.\n\n2. Glycolysis (Cytoplasm)\nGlycolysis is an anaerobic process taking place in the cytosol. One six-carbon glucose molecule is cleaved into two three-carbon pyruvate molecules.\n- Energy Investment Phase: Two ATP molecules are hydrolyzed to phosphorylate glucose into fructose-1,6-bisphosphate.\n- Cleavage and Energy Payoff Phase: Fructose-1,6-bisphosphate is cleaved into G3P and DHAP. Subsequent enzymatic conversions produce 4 ATP through substrate-level phosphorylation and 2 NADH.\n- Net Yield per glucose: 2 Pyruvate, 2 Net ATP, 2 NADH.\n- Key Regulatory Enzyme: Phosphofructokinase-1 (PFK-1), allosterically inhibited by high ATP and citrate, and stimulated by AMP and ADP.\n\n3. The Link Reaction (Pyruvate Decarboxylation)\nPyruvate enters the mitochondrial matrix via active transport (mitochondrial pyruvate carrier). The multienzyme Pyruvate Dehydrogenase Complex (PDC) catalyzes:\nPyruvate + NAD+ + Coenzyme A -> Acetyl-CoA + CO2 + NADH.\nBecause one glucose yields two pyruvates, this step yields 2 Acetyl-CoA, 2 CO2, and 2 NADH.\n\n4. The Citric Acid Cycle (Krebs Cycle)\nOccurring within the mitochondrial matrix, Acetyl-CoA (2C) condenses with Oxaloacetate (4C) to form Citrate (6C), catalyzed by citrate synthase.\nThrough a cycle of eight enzymatic steps:\n- 2 CO2 are released per Acetyl-CoA (4 CO2 per glucose).\n- 3 NADH and 1 FADH2 are produced per turn (6 NADH and 2 FADH2 per glucose).\n- 1 GTP (or ATP) is synthesized per turn via substrate-level phosphorylation (succinyl-CoA synthetase).\n- Oxaloacetate is regenerated to restart the cycle.\n\n5. Oxidative Phosphorylation and Electron Transport Chain (ETC)\nLocated in the inner mitochondrial membrane (cristae), the ETC consists of four protein complexes (I, II, III, IV) and ATP synthase (Complex V).\n- Complex I (NADH dehydrogenase): Receives electrons from NADH, pumps 4 H+ into the intermembrane space.\n- Complex II (Succinate dehydrogenase): Receives electrons from FADH2 without pumping protons.\n- Ubiquinone (CoQ) & Cytochrome c: Mobile carriers transferring electrons down an electronegativity gradient.\n- Complex III (Cytochrome bc1): Pumps 4 H+.\n- Complex IV (Cytochrome c oxidase): Transfers electrons to the terminal electron acceptor, molecular oxygen (O2), reducing it to water (H2O), while pumping 2 H+.\n- Chemiosmosis: The proton motive force (electrochemical gradient across the inner membrane) drives H+ through the catalytic FoF1 ATP Synthase, producing ~2.5 ATP per NADH and ~1.5 ATP per FADH2.\n\n6. Anaerobic Fermentation\nIn the absence of oxygen, cells undergo lactic acid fermentation (e.g., human skeletal muscle) or ethanol fermentation (e.g., yeast) to re-oxidize NADH back into NAD+, sustaining glycolysis for emergency ATP generation.",
+      "snippet": "Cellular respiration is the catabolic biochemical pathway by which aerobic organisms extract chemical energy from nutrient molecules...",
+      "createdAt": "2026-10-14T15:33:58.018Z"
+    }
+  ],
+  "summaries": [
+    {
+      "id": "2bbf2b05-f7e2-4735-bed4-e0d10a00f331",
+      "userId": "b7511e1f-f30d-44ad-9a65-e5417ddee8db",
+      "documentId": "562c2e95-d47e-4356-a3a9-49478ba07899",
+      "title": "Cellular Respiration & ATP Synthesis - Study Guide",
+      "summaryType": "standard",
+      "content": "## 1. Introduction and Overview\nCellular respiration is the foundational metabolic engine of aerobic life, transforming biochemical energy stored in hexose sugars into usable cellular currency (**ATP**). The net balanced equation is:\n**C6H12O6 + 6 O2 → 6 CO2 + 6 H2O + ~30-32 ATP**\n\n## 2. Topic-Wise Explanations\n- **Glycolysis (Cytosol)**: Anaerobic breakdown of glucose into 2 pyruvates. Consumes 2 ATP in the investment stage and synthesizes 4 ATP, netting 2 ATP and 2 NADH. Controlled centrally by **PFK-1**.\n- **Pyruvate Decarboxylation (Mitochondrial Matrix)**: Pyruvate is enzymatically converted into Acetyl-CoA by the **Pyruvate Dehydrogenase Complex**, generating 1 CO2 and 1 NADH per pyruvate.\n- **Citric Acid (Krebs) Cycle (Matrix)**: Acetyl-CoA joins oxaloacetate to generate citrate. Two complete turns per glucose yield 6 NADH, 2 FADH2, 2 GTP/ATP, and 4 CO2.\n- **Oxidative Phosphorylation & ETC (Inner Mitochondrial Membrane)**: Electron flow through Complexes I-IV drives proton pumping across the cristae, generating a proton gradient that powers **FoF1 ATP Synthase** (chemiosmosis).\n\n## 3. Important Concepts and Definitions\n- **Substrate-Level Phosphorylation**: Direct synthesis of ATP from ADP by transferring a phosphate group from a phosphorylated metabolic intermediate.\n- **Proton Motive Force (PMF)**: The combined chemical and electrical potential gradient across the inner mitochondrial membrane driving ATP synthesis.\n- **Phosphofructokinase-1 (PFK-1)**: The primary rate-limiting enzyme of glycolysis, sensitive to the ATP/AMP cellular ratio.\n- **Chemiosmosis**: Coupling of the electrochemical proton gradient to ATP generation via ATP synthase.\n\n## 4. Key Points & Takeaways\n- Glycolysis is anaerobic and takes place in the cytosol; all subsequent stages take place inside the mitochondria.\n- Molecular oxygen (O2) functions as the terminal electron acceptor, forming water.\n- Yield per glucose: ~2.5 ATP per NADH and ~1.5 ATP per FADH2.\n- Fermentation regenerates NAD+ so glycolysis can continue when oxygen is depleted.\n\n## 5. Examples and Formulas\n- Overall Reaction: `C6H12O6 + 6 O2 -> 6 CO2 + 6 H2O + 30-32 ATP`\n- Glycolysis Net Yield: `1 Glucose -> 2 Pyruvate + 2 ATP (net) + 2 NADH`\n- Krebs Cycle Turn: `1 Acetyl-CoA -> 2 CO2 + 3 NADH + 1 FADH2 + 1 GTP`\n\n## 6. Quick Revision Notes\n- Where does Glycolysis occur? -> Cytosol (cytoplasm)\n- Terminal electron acceptor in ETC? -> Oxygen (O2)\n- Enzyme inhibited by high ATP in glycolysis? -> PFK-1\n- Total net ATP per aerobic glucose molecule? -> 30 to 32 ATP\n\n## 7. Conclusion\nAerobic respiration maximizes energy extraction through tightly coordinated compartmentalized stages. Understanding the redox cofactors (NADH and FADH2) and mitochondrial proton gradients is central to mastering cellular energetics.",
+      "keyPoints": [
+        "Glycolysis occurs in the cytosol without requiring oxygen, yielding 2 net ATP and 2 NADH.",
+        "Pyruvate dehydrogenase complex converts pyruvate into Acetyl-CoA in the mitochondrial matrix.",
+        "The Citric Acid Cycle produces 6 NADH, 2 FADH2, and 2 GTP/ATP per glucose molecule.",
+        "Oxygen acts as the terminal electron acceptor at Complex IV of the electron transport chain.",
+        "Chemiosmosis uses the proton motive force through ATP synthase to produce approximately 30-32 ATP."
+      ],
+      "wordCount": 468,
+      "createdAt": "2026-10-14T15:33:58.019Z"
+    },
+    {
+      "id": "557bb4e6-f3a3-415d-8169-7edb25a580c0",
+      "userId": "b7511e1f-f30d-44ad-9a65-e5417ddee8db",
+      "title": "Photosynthesis & Cellular Energy (STANDARD)",
+      "summaryType": "standard",
+      "content": "## 1. Introduction and Overview\n**Photosynthesis** is a vital biochemical pathway utilized by green plants, algae, and specific bacteria to transform sunlight energy into chemical energy, which is subsequently stored in the form of glucose. This fundamental biological process sustains nearly all life on Earth by providing both organic fuel and atmospheric oxygen. The overarching transformation requires carbon dioxide, water, and solar radiation to yield glucose and oxygen gas as a byproduct. \n\n## 2. Topic-Wise Explanations\nThe process of photosynthesis is divided into two primary stages that occur in distinct regions of the plant cell: the **light-dependent reactions** and the **Calvin cycle**.\n\n*   **Light-Dependent Reactions:** These reactions take place within the **thylakoid membranes** of the chloroplast. During this phase, specialized pigments known as **chlorophyll** capture photons from sunlight. This absorbed light energy drives the process of **photolysis**, wherein water molecules are split to release oxygen gas while generating chemical energy carriers—specifically **ATP** and **NADPH**—via an **electron transport** chain.\n*   **Calvin Cycle (Light-Independent Reactions):** Operating within the **stroma** of the chloroplast, this stage does not directly require light. Instead, it utilizes the **ATP** and **NADPH** produced in the previous stage to **fix** carbon dioxide ($CO_2$). Driven by the critical enzyme **RuBisCO**, the cycle converts inorganic carbon into organic molecules, specifically **glyceraldehyde 3-phosphate (G3P)**, which is a precursor for glucose.\n\n## 3. Important Concepts and Definitions\n*   **Photosynthesis:** The biochemical pathway converting sunlight energy into chemical energy stored in glucose.\n*   **Chlorophyll:** The primary pigment found in green plants and algae responsible for capturing photons of light during the **light-dependent reactions**.\n*   **Photolysis:** The splitting of water molecules driven by captured light energy, which releases oxygen and supplies electrons.\n*   **Electron Transport:** A series of reactions that transfers electrons to create energy carriers (**ATP** and **NADPH**).\n*   **RuBisCO:** An essential enzyme operating in the **stroma** responsible for fixing carbon dioxide during the **Calvin cycle**.\n*   **G3P (Glyceraldehyde 3-phosphate):** The direct organic product of carbon fixation in the **Calvin cycle**.\n\n## 4. Key Points & Takeaways\n*   **Photosynthesis** serves as the primary mechanism for converting solar energy into storable chemical energy.\n*   The process is divided between two locations inside the chloroplast: the **thylakoid membranes** (for light-dependent reactions) and the **stroma** (for the **Calvin cycle**).\n*   Water is split (**photolysis**) during the **light-dependent reactions**, releasing oxygen and generating **ATP** and **NADPH**.\n*   The **Calvin cycle** relies on the enzyme **RuBisCO** to fix carbon dioxide into **G3P**.\n*   The overall stoichiometry balances the input of inorganic matter and light with the output of organic fuel and oxygen.\n\n## 5. Examples and Formulas\n*   **Balanced Chemical Equation for Photosynthesis:** \n    $$6 \\text{ CO}_2 + 6 \\text{ H}_2\\text{O} + \\text{light} \\rightarrow \\text{C}_6\\text{H}_{12}\\text{O}_6 + 6 \\text{ O}_2$$\n*   **Concrete Processes:** \n    *   *Light-Dependent Stage:* Photon absorption $\\rightarrow$ **Photolysis** of water $\\rightarrow$ **Electron transport** $\\rightarrow$ Generation of **ATP** and **NADPH** + Release of $O_2$.\n    *   *Calvin Cycle Stage:* $CO_2$ fixation via **RuBisCO** in the **stroma** $\\rightarrow$ Production of **G3P**.\n\n## 6. Quick Revision Notes\n*   **Definition:** **Photosynthesis** converts sunlight into chemical energy in green plants, algae, and certain bacteria.\n*   **Equation:** $6\\text{CO}_2 + 6\\text{H}_2\\text{O} + \\text{light} \\rightarrow \\text{C}_6\\text{H}_{12}\\text{O}_6 + 6\\text{O}_2$.\n*   **Location 1:** **Thylakoid membranes** host the **light-dependent reactions**.\n*   **Action 1:** **Chlorophyll** captures photons; water undergoes **photolysis** to form $O_2$, **ATP**, and **NADPH** via **electron transport**.\n*   **Location 2:** The **stroma** hosts the **Calvin cycle**.\n*   **Action 2:** The enzyme **RuBisCO** fixes $CO_2$ to produce **glyceraldehyde 3-phosphate (G3P)**.\n\n## 7. Conclusion\nIn summary, **photosynthesis** is an elegantly coordinated two-part biochemical system. By harnessing solar energy through **chlorophyll** within the **thylakoid membranes**, plants generate necessary energy carriers (**ATP** and **NADPH**) and split water molecules. Subsequently, the **Calvin cycle** in the **stroma** utilizes the enzyme **RuBisCO** to fix carbon dioxide into stable organic molecules. Together, these processes successfully transform raw environmental inputs into life-sustaining glucose and oxygen.",
+      "keyPoints": [
+        "Photosynthesis converts sunlight, carbon dioxide, and water into glucose and oxygen.",
+        "The balanced chemical equation is 6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2.",
+        "Light-dependent reactions occur in the thylakoid membranes, utilizing chlorophyll to capture photons and photolyze water.",
+        "Electron transport during light reactions produces ATP and NADPH while releasing oxygen.",
+        "The Calvin cycle takes place in the stroma and fixes CO2 into G3P using the enzyme RuBisCO."
+      ],
+      "wordCount": 636,
+      "createdAt": "2026-10-14T15:51:34.084Z"
+    }
+  ],
+  "quizzes": [
+    {
+      "id": "be812fd5-e9cb-49d6-84f7-0c822a9f1a81",
+      "userId": "b7511e1f-f30d-44ad-9a65-e5417ddee8db",
+      "documentId": "562c2e95-d47e-4356-a3a9-49478ba07899",
+      "summaryId": "2bbf2b05-f7e2-4735-bed4-e0d10a00f331",
+      "title": "Cellular Respiration Mastery Quiz",
+      "difficulty": "medium",
+      "questionCount": 5,
+      "questionType": "multiple_choice",
+      "questions": [
+        {
+          "id": "q_1",
+          "question": "Where within a eukaryotic cell does glycolysis take place?",
+          "type": "multiple_choice",
+          "options": [
+            "Cytosol (Cytoplasm)",
+            "Mitochondrial Matrix",
+            "Inner Mitochondrial Membrane",
+            "Intermembrane Space"
+          ],
+          "correctAnswerIndex": 0,
+          "explanation": "Glycolysis is an anaerobic metabolic pathway that occurs entirely in the cytosol of eukaryotic and prokaryotic cells.",
+          "topic": "Glycolysis"
+        },
+        {
+          "id": "q_2",
+          "question": "What is the net ATP yield generated strictly from glycolysis per single molecule of glucose?",
+          "type": "multiple_choice",
+          "options": [
+            "4 ATP",
+            "2 ATP",
+            "30 ATP",
+            "1 ATP"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Glycolysis consumes 2 ATP in the investment phase and produces 4 ATP in the payoff phase, resulting in a net yield of 2 ATP.",
+          "topic": "Glycolysis"
+        },
+        {
+          "id": "q_3",
+          "question": "Which molecule serves as the terminal electron acceptor in aerobic respiration at Complex IV?",
+          "type": "multiple_choice",
+          "options": [
+            "Carbon dioxide (CO2)",
+            "Molecular oxygen (O2)",
+            "NAD+",
+            "Water (H2O)"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "Molecular oxygen (O2) acts as the final electron acceptor in the electron transport chain, binding protons to form water.",
+          "topic": "Electron Transport Chain"
+        },
+        {
+          "id": "q_4",
+          "question": "Which key enzyme serves as the primary regulatory checkpoint in glycolysis and is inhibited by high ATP levels?",
+          "type": "multiple_choice",
+          "options": [
+            "Hexokinase",
+            "Pyruvate kinase",
+            "Phosphofructokinase-1 (PFK-1)",
+            "Citrate synthase"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "Phosphofructokinase-1 (PFK-1) catalyzes the committed step of glycolysis and is allosterically inhibited by ATP and citrate.",
+          "topic": "Enzyme Regulation"
+        },
+        {
+          "id": "q_5",
+          "question": "During oxidative phosphorylation, where do protons accumulate to create the electrochemical proton gradient?",
+          "type": "multiple_choice",
+          "options": [
+            "Mitochondrial intermembrane space",
+            "Mitochondrial matrix",
+            "Outer cytoplasm",
+            "Endoplasmic reticulum lumen"
+          ],
+          "correctAnswerIndex": 0,
+          "explanation": "Complexes I, III, and IV pump protons from the matrix into the intermembrane space, creating the proton motive force.",
+          "topic": "Chemiosmosis"
+        }
+      ],
+      "createdAt": "2026-10-14T15:33:58.019Z"
+    },
+    {
+      "id": "2539af91-6fc6-427d-ad0a-68703426183f",
+      "userId": "b7511e1f-f30d-44ad-9a65-e5417ddee8db",
+      "title": "Photosynthesis Rapid Quiz Quiz",
+      "difficulty": "medium",
+      "questionCount": 5,
+      "questionType": "multiple_choice",
+      "questions": [
+        {
+          "id": "q_1",
+          "question": "What are the primary chemical inputs required for photosynthesis according to the provided equation?",
+          "type": "multiple_choice",
+          "options": [
+            "C6H12O6 and O2",
+            "CO2, H2O, and light",
+            "ATP, NADPH, and G3P",
+            "RuBisCO and chlorophyll"
+          ],
+          "correctAnswerIndex": 1,
+          "explanation": "The equation provided is 6 CO2 + 6 H2O + light -> C6H12O6 + 6 O2. This shows that carbon dioxide, water, and light are the necessary inputs, while glucose and oxygen are the outputs. The other options either represent outputs or molecules involved in specific steps rather than the primary inputs of the overall equation.",
+          "topic": "Photosynthesis Equation"
+        },
+        {
+          "id": "q_2",
+          "question": "Where do the light reactions of photosynthesis take place, and what is a key product generated by splitting water?",
+          "type": "multiple_choice",
+          "options": [
+            "Stroma; G3P",
+            "RuBisCO; CO2",
+            "Thylakoids; ATP and NADPH",
+            "Cytoplasm; C6H12O6"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "The study material explicitly states that light reactions occur in the thylakoids and make ATP and NADPH by splitting water. The stroma is where the Calvin cycle takes place, making G3P, making the other options incorrect based on cellular localization and biochemical function.",
+          "topic": "Light Reactions"
+        },
+        {
+          "id": "q_3",
+          "question": "What is the primary role of the enzyme RuBisCO during the Calvin cycle?",
+          "type": "multiple_choice",
+          "options": [
+            "To split water molecules and release oxygen",
+            "To generate ATP and NADPH using light energy",
+            "To fix CO2 into G3P",
+            "To convert glucose back into carbon dioxide"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "According to the text, the Calvin cycle in the stroma uses the enzyme RuBisCO to fix CO2 into G3P. Splitting water and generating ATP/NADPH are functions of the light reactions in the thylakoids, not RuBisCO's role in the Calvin cycle.",
+          "topic": "Calvin Cycle"
+        },
+        {
+          "id": "q_4",
+          "question": "If a plant is deprived of light, which immediate process in the chloroplast will be directly and primarily impacted?",
+          "type": "multiple_choice",
+          "options": [
+            "The light reactions in the thylakoids",
+            "The activity of RuBisCO in the stroma",
+            "The structural stability of the cell wall",
+            "The absorption of glucose from the soil"
+          ],
+          "correctAnswerIndex": 0,
+          "explanation": "Light reactions specifically rely on light to split water and produce ATP and NADPH. Depriving the plant of light directly halts this pathway. While the Calvin cycle relies on the products of the light reactions, the light reactions are the direct consumers of light energy.",
+          "topic": "Light Reactions"
+        },
+        {
+          "id": "q_5",
+          "question": "Which of the following molecules is the ultimate organic product synthesized as a result of carbon fixation in the Calvin cycle?",
+          "type": "multiple_choice",
+          "options": [
+            "O2",
+            "H2O",
+            "G3P",
+            "CO2"
+          ],
+          "correctAnswerIndex": 2,
+          "explanation": "The text notes that the Calvin cycle uses RuBisCO to fix CO2 into G3P. Oxygen (O2) and water (H2O) are associated with the light reactions and overall inputs/outputs, whereas G3P is the direct product of the Calvin cycle leading to glucose formation.",
+          "topic": "Calvin Cycle Products"
+        }
+      ],
+      "createdAt": "2026-10-14T15:51:43.378Z"
+    }
+  ],
+  "quizAttempts": [
+    {
+      "id": "579cc06d-ae16-4a93-be1a-42d49227fccd",
+      "userId": "b7511e1f-f30d-44ad-9a65-e5417ddee8db",
+      "quizId": "be812fd5-e9cb-49d6-84f7-0c822a9f1a81",
+      "quizTitle": "Cellular Respiration Mastery Quiz",
+      "score": 4,
+      "totalQuestions": 5,
+      "percentage": 80,
+      "userAnswers": {
+        "q_1": 0,
+        "q_2": 1,
+        "q_3": 1,
+        "q_4": 2,
+        "q_5": 1
+      },
+      "timeSpentSeconds": 145,
+      "completedAt": "2026-10-14T15:33:58.019Z"
+    }
+  ]
+}

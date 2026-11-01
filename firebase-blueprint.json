@@ -1,0 +1,117 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with study preferences and configurations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 256 },
+        "fullName": { "type": "string", "maxLength": 128, "minLength": 1 },
+        "educationLevel": { "type": "string", "maxLength": 64 },
+        "geminiApiKey": { "type": "string", "maxLength": 256 },
+        "openRouterApiKey": { "type": "string", "maxLength": 256 },
+        "preferredProvider": { "type": "string", "enum": ["gemini", "openrouter"] },
+        "openRouterModel": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "fullName", "createdAt"]
+    },
+    "Document": {
+      "title": "Study Document",
+      "description": "Uploaded or pasted study notes and lecture materials",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256, "minLength": 1 },
+        "originalFilename": { "type": "string", "maxLength": 256 },
+        "mimetype": { "type": "string", "maxLength": 128 },
+        "fileSize": { "type": "number" },
+        "wordCount": { "type": "number" },
+        "characterCount": { "type": "number" },
+        "pageCount": { "type": "number" },
+        "extractedText": { "type": "string", "maxLength": 500000 },
+        "snippet": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "originalFilename", "extractedText", "createdAt"]
+    },
+    "Summary": {
+      "title": "AI Study Summary",
+      "description": "AI-generated structured study summary with key points",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "documentId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256, "minLength": 1 },
+        "summaryType": { "type": "string", "enum": ["concise", "standard", "detailed", "very_detailed"] },
+        "content": { "type": "string", "maxLength": 500000 },
+        "keyPoints": { "type": "array" },
+        "wordCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "summaryType", "content", "createdAt"]
+    },
+    "Quiz": {
+      "title": "AI Interactive Quiz",
+      "description": "AI-generated questions and practice testing materials",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "documentId": { "type": "string", "maxLength": 128 },
+        "summaryId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256, "minLength": 1 },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+        "questionCount": { "type": "number" },
+        "questionType": { "type": "string", "enum": ["multiple_choice", "true_false", "mixed"] },
+        "questions": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "difficulty", "questionCount", "questions", "createdAt"]
+    },
+    "QuizAttempt": {
+      "title": "Quiz Attempt",
+      "description": "Score record and student review of completed quiz session",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "quizId": { "type": "string", "maxLength": 128 },
+        "quizTitle": { "type": "string", "maxLength": 256 },
+        "score": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "percentage": { "type": "number" },
+        "userAnswers": { "type": "object" },
+        "timeSpentSeconds": { "type": "number" },
+        "completedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "quizId", "quizTitle", "score", "totalQuestions", "completedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Stores private user account information, profile settings, and API preferences"
+    },
+    "/users/{userId}/documents/{documentId}": {
+      "schema": "Document",
+      "description": "Stores user uploaded and pasted study notes and extracted text"
+    },
+    "/users/{userId}/summaries/{summaryId}": {
+      "schema": "Summary",
+      "description": "Stores AI generated structured summaries for student study materials"
+    },
+    "/users/{userId}/quizzes/{quizId}": {
+      "schema": "Quiz",
+      "description": "Stores AI generated quizzes, flashcards, and testing assessments"
+    },
+    "/users/{userId}/quizAttempts/{attemptId}": {
+      "schema": "QuizAttempt",
+      "description": "Stores individual completed quiz attempts, time taken, and score percentages"
+    }
+  }
+}
