@@ -68,7 +68,6 @@ export async function extractTextFromBuffer(
     }
   } else if (
     mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    mimetype === 'application/msword' ||
     lowerFilename.endsWith('.docx')
   ) {
     try {
