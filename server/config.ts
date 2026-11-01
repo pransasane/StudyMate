@@ -18,8 +18,8 @@ export const AI_CONFIG = {
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
 
   // Default models
-  DEFAULT_GEMINI_MODEL: 'gemini-3.6-flash',
-  DEFAULT_OPENROUTER_MODEL: 'google/gemini-3.5-flash',
+  DEFAULT_GEMINI_MODEL: 'gemini-3.8-flash',
+  DEFAULT_OPENROUTER_MODEL: 'google/gemini-3.8-flash',
 
   // Application URL & Port
   APP_URL: process.env.APP_URL || 'http://localhost:3000',
