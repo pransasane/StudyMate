@@ -56,7 +56,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
   const validateAndSetFile = (selectedFile: File) => {
     setError(null);
-    const validExtensions = ['.pdf', '.txt', '.docx', '.doc', '.md'];
+    const validExtensions = ['.pdf', '.txt', '.docx', '.md'];
     const ext = selectedFile.name.substring(selectedFile.name.lastIndexOf('.')).toLowerCase();
 
     if (!validExtensions.includes(ext)) {
@@ -64,8 +64,8 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       return;
     }
 
-    if (selectedFile.size > 25 * 1024 * 1024) {
-      setError('File is too large. The maximum supported file size is 25MB.');
+    if (selectedFile.size > 4 * 1024 * 1024) {
+      setError('This file is larger than 4 MB. The current upload service has a 4 MB limit. Split large PDFs into smaller chapters and upload them separately.');
       return;
     }
 
