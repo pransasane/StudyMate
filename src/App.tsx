@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.js';
 import { Navbar } from './components/Navbar.js';
 import { Footer } from './components/Footer.js';
@@ -40,18 +40,28 @@ function StudyMateApp() {
 
   // Fetch documents and summaries cache for modals
   const refreshLibraryCache = async () => {
-    if (!user) return;
+    if (!user) {
+      setDocumentsCache([]);
+      setSummariesCache([]);
+      return;
+    }
     try {
-      const [docsRes, sumRes] = await Promise.all([
-        api.getDocuments().catch(() => ({ documents: [] })),
-        api.getSummaries().catch(() => ({ summaries: [] })),
+      const [savedDocuments, savedSummaries] = await Promise.all([
+        firestoreService.getDocuments(user.id),
+        firestoreService.getSummaries(user.id),
       ]);
-      setDocumentsCache(docsRes.documents);
-      setSummariesCache(sumRes.summaries);
+      setDocumentsCache(savedDocuments);
+      setSummariesCache(savedSummaries);
     } catch (e) {
-      console.warn('Failed to refresh library cache:', e);
+      console.error('Failed to refresh the saved StudyMate library:', e);
     }
   };
+
+  // Rehydrate the modal selections whenever Firebase restores or changes the
+  // signed-in user. This keeps saved materials available after page refresh.
+  useEffect(() => {
+    void refreshLibraryCache();
+  }, [user?.id]);
 
   const handleOpenAuth = (mode: 'login' | 'register' = 'login') => {
     setAuthMode(mode);
