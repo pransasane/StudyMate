@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, ConfigStatus } from '../types/index.js';
 import { api } from '../services/api.js';
 import {
@@ -42,6 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [configStatus, setConfigStatus] = useState<ConfigStatus | null>(null);
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
   const [isFirebaseUser, setIsFirebaseUser] = useState(false);
+  const authActionInProgress = useRef(false);
 
   /**
    * Firebase Authentication owns identity.
@@ -72,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         existing?.educationLevel ||
         'College / University',
       preferredProvider: existing?.preferredProvider || 'gemini',
-      createdAt: existing?.createdAt || new Date().toISOString(),
+      createdAt: existing?.createdAt || firebaseUser.metadata.creationTime || new Date().toISOString(),
     };
 
     // A profile write must succeed before the user is admitted to the workspace.
@@ -96,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let active = true;
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!active) return;
+      if (!active || authActionInProgress.current) return;
 
       if (!firebaseUser) {
         setUser(null);
@@ -131,11 +132,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
+    authActionInProgress.current = true;
     setLoading(true);
     try {
       const result = await signInWithEmailAndPassword(auth, email.trim(), password);
       await syncFirebaseProfile(result.user);
     } finally {
+      authActionInProgress.current = false;
       setLoading(false);
     }
   };
@@ -146,6 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password: string,
     educationLevel?: string
   ) => {
+    authActionInProgress.current = true;
     setLoading(true);
     try {
       const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
@@ -155,16 +159,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         educationLevel,
       });
     } finally {
+      authActionInProgress.current = false;
       setLoading(false);
     }
   };
 
   const signInWithGoogle = async () => {
+    authActionInProgress.current = true;
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       await syncFirebaseProfile(result.user);
     } finally {
+      authActionInProgress.current = false;
       setLoading(false);
     }
   };
