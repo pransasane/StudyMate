@@ -96,6 +96,8 @@ api.get('/config/status', (_req, res) => {
   res.json({
     geminiAvailable: Boolean(getActiveGeminiApiKey()),
     openRouterEnvAvailable: Boolean(getActiveOpenRouterApiKey()),
+    firebaseAuthAvailable: Boolean(process.env.FIREBASE_API_KEY),
+    geminiModel: AI_CONFIG.DEFAULT_GEMINI_MODEL,
     port: AI_CONFIG.PORT,
     timestamp: new Date().toISOString(),
   });
