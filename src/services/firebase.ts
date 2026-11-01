@@ -7,6 +7,7 @@ import {
   collection,
   setDoc,
   getDoc,
+  getDocs,
   deleteDoc,
   onSnapshot,
   getDocFromServer,
@@ -230,6 +231,20 @@ export const firestoreService = {
     }
   },
 
+  async getDocuments(userId: string): Promise<Document[]> {
+    assertOwner(userId);
+    const path = `users/${userId}/documents`;
+    try {
+      const result = await getDocs(query(
+        collection(db, 'users', userId, 'documents'),
+        orderBy('createdAt', 'desc')
+      ));
+      return result.docs.map((item) => item.data() as Document);
+    } catch (error) {
+      throw firestoreError(error, OperationType.LIST, path);
+    }
+  },
+
   subscribeDocuments(userId: string, onSuccess: (items: Document[]) => void, onError?: (error: Error) => void) {
     return createSubscription<Document>(userId, 'documents', 'createdAt', onSuccess, onError);
   },
@@ -253,6 +268,20 @@ export const firestoreService = {
       await deleteDoc(doc(db, 'users', userId, 'summaries', summaryId));
     } catch (error) {
       throw firestoreError(error, OperationType.DELETE, path);
+    }
+  },
+
+  async getSummaries(userId: string): Promise<Summary[]> {
+    assertOwner(userId);
+    const path = `users/${userId}/summaries`;
+    try {
+      const result = await getDocs(query(
+        collection(db, 'users', userId, 'summaries'),
+        orderBy('createdAt', 'desc')
+      ));
+      return result.docs.map((item) => item.data() as Summary);
+    } catch (error) {
+      throw firestoreError(error, OperationType.LIST, path);
     }
   },
 
