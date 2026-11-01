@@ -86,7 +86,8 @@ interface DatabaseSchema {
   quizAttempts: QuizAttempt[];
 }
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
+const isServerless = process.env.VERCEL === '1' || Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
+const DATA_DIR = isServerless ? path.join('/tmp', 'data') : path.resolve(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'studymate_db.json');
 
 class Database {
@@ -116,8 +117,8 @@ class Database {
       }
       this.isLoaded = true;
     } catch (e) {
-      console.error('Error initializing database:', e);
-      this.persist();
+      console.warn('Database init filesystem notice (using in-memory fallback):', e);
+      // In-memory fallback is active
     }
   }
 
@@ -130,7 +131,7 @@ class Database {
       fs.writeFileSync(tmpFile, JSON.stringify(this.data, null, 2), 'utf-8');
       fs.renameSync(tmpFile, DB_FILE);
     } catch (e) {
-      console.error('Error persisting database:', e);
+      console.warn('Database persistence notice (in-memory active):', e);
     }
   }
 
