@@ -1,4 +1,3 @@
-import { PDFParse } from 'pdf-parse';
 import mammoth from 'mammoth';
 
 export interface ExtractedDoc {
@@ -22,9 +21,15 @@ export async function extractTextFromBuffer(
   if (mimetype === 'application/pdf' || lowerFilename.endsWith('.pdf')) {
     let parser: any = null;
     try {
-      // PDFParse in v2 expects Uint8Array or Buffer in data property
+      // The pdf-parse v2 worker must be initialized before importing PDFParse.
+      // This registers the CanvasFactory/DOMMatrix support required by Vercel's
+      // Node.js serverless runtime.
+      const { CanvasFactory } = await import('pdf-parse/worker');
+      const { PDFParse } = await import('pdf-parse');
+
+      // PDFParse in v2 expects Uint8Array or Buffer in data property.
       const uint8 = new Uint8Array(buffer);
-      parser = new PDFParse({ data: uint8 });
+      parser = new PDFParse({ data: uint8, CanvasFactory });
       
       const textRes = await parser.getText({
         pageJoiner: '\n\n',
