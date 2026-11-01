@@ -16,15 +16,16 @@ app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 25 * 1024 * 1024 },
+  // Vercel Functions accept request bodies up to 4.5 MB; keep headroom for multipart metadata.
+  limits: { fileSize: 4 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowedExtensions = ['.pdf', '.txt', '.docx', '.doc', '.md'];
+    const allowedExtensions = ['.pdf', '.txt', '.docx', '.md'];
     const extension = path.extname(file.originalname).toLowerCase();
     if (
       allowedExtensions.includes(extension) ||
-      file.mimetype.includes('pdf') ||
-      file.mimetype.includes('text') ||
-      file.mimetype.includes('word')
+      file.mimetype === 'application/pdf' ||
+      file.mimetype.startsWith('text/') ||
+      file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ) {
       cb(null, true);
     } else {
