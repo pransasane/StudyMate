@@ -4,7 +4,7 @@
  * ==============================================================================
  *
  * This file provides a complete, standalone, production-grade interface for
- * Google's modern `@google/genai` TypeScript SDK using the official `gemini-3.8-flash`
+ * Google's modern `@google/genai` TypeScript SDK using the official `gemini-3.6-flash`
  * model.
  *
  * Designed for immediate use in GitHub repositories, local development,
@@ -31,12 +31,12 @@ dotenv.config();
 
 /**
  * Standard AI Model Configuration
- * Uses 'gemini-3.8-flash' as recommended by the Google GenAI SDK for high-speed,
+ * Uses 'gemini-3.6-flash' as recommended by the Google GenAI SDK for high-speed,
  * high-accuracy text summarization, reasoning, and quiz generation.
  */
 export const AI_MODELS = {
-  PRIMARY: 'gemini-3.8-flash',
-  FAST: 'gemini-3.8-flash',
+  PRIMARY: 'gemini-3.6-flash',
+  FAST: 'gemini-3.6-flash',
   LITE: 'gemini-3.1-flash-lite',
 } as const;
 
