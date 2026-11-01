@@ -115,7 +115,7 @@ async function callOpenRouter(apiKey: string, model: string, prompt: string, sys
  * Call Gemini API using modern @google/genai SDK
  * Uses prioritized models with instant response:
  * 1. gemini-3-flash-preview (active fast tier)
- * 2. gemini-3.8-flash (official standard)
+ * 2. gemini-3.6-flash (official standard)
  * 3. gemini-flash-latest
  * 4. gemini-3.1-flash-lite
  * 5. gemini-flash-lite-latest
@@ -133,7 +133,7 @@ async function callGemini(
 
   const ai = new GoogleGenAI({ apiKey });
   // Stable Gemini models with a bounded timeout for normal generation latency.
-  const modelsToTry = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
+  const modelsToTry = ['gemini-3.6-flash', 'gemini-3.5-flash-lite'];
 
   let lastError: any = null;
 
@@ -420,7 +420,7 @@ Please produce the comprehensive StudyMate summary now.`;
 
   let rawOutput = '';
   let providerUsed: 'openrouter' | 'gemini' = 'gemini';
-  let modelUsed = 'gemini-3.8-flash';
+  let modelUsed = 'gemini-3.6-flash';
 
   if (useOpenRouter && effectiveOpenRouterKey) {
     try {
@@ -566,7 +566,7 @@ Output the JSON object now:`;
 
   let rawOutput = '';
   let providerUsed: 'openrouter' | 'gemini' = 'gemini';
-  let modelUsed = 'gemini-3.8-flash';
+  let modelUsed = 'gemini-3.6-flash';
 
   if (useOpenRouter && effectiveOpenRouterKey) {
     try {
