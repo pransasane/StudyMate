@@ -83,7 +83,7 @@ async function callOpenRouter(apiKey: string, model: string, prompt: string, sys
       'X-Title': 'StudyMate Learning Companion',
     },
     body: JSON.stringify({
-      model: model || 'google/gemini-3.5-flash',
+      model: model || 'google/gemini-3.8-flash',
       messages,
       temperature: 0.3,
     }),
@@ -115,7 +115,7 @@ async function callOpenRouter(apiKey: string, model: string, prompt: string, sys
  * Call Gemini API using modern @google/genai SDK
  * Uses prioritized models with instant response:
  * 1. gemini-3-flash-preview (active fast tier)
- * 2. gemini-3.6-flash (official standard)
+ * 2. gemini-3.8-flash (official standard)
  * 3. gemini-flash-latest
  * 4. gemini-3.1-flash-lite
  * 5. gemini-flash-lite-latest
@@ -133,7 +133,7 @@ async function callGemini(
 
   const ai = new GoogleGenAI({ apiKey });
   // Stable Gemini models with a bounded timeout for normal generation latency.
-  const modelsToTry = ['gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+  const modelsToTry = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'];
 
   let lastError: any = null;
 
@@ -194,7 +194,7 @@ export async function testGeminiConnection(apiKey?: string): Promise<{ success: 
  * Test OpenRouter connection
  */
 export async function testOpenRouterConnection(apiKey: string, model?: string): Promise<{ success: boolean; message: string }> {
-  const testModel = !model || model === 'google/gemini-2.0-flash-001' ? 'google/gemini-3.5-flash' : model;
+  const testModel = !model || model === 'google/gemini-2.0-flash-001' ? 'google/gemini-3.8-flash' : model;
   const res = await callOpenRouter(apiKey, testModel, 'Respond with the word: CONNECTED');
   return {
     success: true,
@@ -377,7 +377,7 @@ export function generateFallbackQuiz(
 export async function generateSummary(options: GenerateSummaryOptions): Promise<SummaryResult> {
   const { text, title, summaryType, geminiApiKey, openRouterApiKey, preferredProvider, openRouterModel } = options;
   const selectedOpenRouterModel = !openRouterModel || openRouterModel === 'google/gemini-2.0-flash-001'
-    ? 'google/gemini-3.5-flash'
+    ? 'google/gemini-3.8-flash'
     : openRouterModel;
 
   const lengthInstructions = {
@@ -423,7 +423,7 @@ Please produce the comprehensive StudyMate summary now.`;
 
   let rawOutput = '';
   let providerUsed: 'openrouter' | 'gemini' = 'gemini';
-  let modelUsed = 'gemini-3.6-flash';
+  let modelUsed = 'gemini-3.8-flash';
 
   if (useOpenRouter && effectiveOpenRouterKey) {
     try {
@@ -510,7 +510,7 @@ Please produce the comprehensive StudyMate summary now.`;
 export async function generateQuiz(options: GenerateQuizOptions): Promise<QuizResult> {
   const { text, title, questionCount, difficulty, questionType, geminiApiKey, openRouterApiKey, preferredProvider, openRouterModel } = options;
   const selectedOpenRouterModel = !openRouterModel || openRouterModel === 'google/gemini-2.0-flash-001'
-    ? 'google/gemini-3.5-flash'
+    ? 'google/gemini-3.8-flash'
     : openRouterModel;
 
   const typeDesc = {
@@ -572,7 +572,7 @@ Output the JSON object now:`;
 
   let rawOutput = '';
   let providerUsed: 'openrouter' | 'gemini' = 'gemini';
-  let modelUsed = 'gemini-3.6-flash';
+  let modelUsed = 'gemini-3.8-flash';
 
   if (useOpenRouter && effectiveOpenRouterKey) {
     try {
