@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { QuizQuestion } from './db.js';
+import type { QuizQuestion } from './db.js';
 import { getActiveGeminiApiKey, getActiveOpenRouterApiKey, AI_CONFIG } from './config.js';
 
 export interface GenerateSummaryOptions {
@@ -312,10 +312,13 @@ export function generateFallbackQuiz(
   difficulty: 'easy' | 'medium' | 'hard',
   questionType: 'multiple_choice' | 'true_false' | 'mixed'
 ): QuizResult {
-  const sentences = text
-    .split(/(?<=[.?!])\s+/)
+  const sentenceCandidates = text
+    .split(/(?<=[.?!])\s+|\n+/)
     .map((s) => s.trim())
-    .filter((s) => s.length > 30 && s.length < 220 && !s.includes('http'));
+    .filter((s) => s.length > 15 && s.length < 500 && !s.includes('http'));
+  const sentences = sentenceCandidates.length > 0
+    ? sentenceCandidates
+    : [text.trim().slice(0, 220)];
 
   const questions: QuizQuestion[] = [];
   const targetCount = Math.min(questionCount, Math.max(5, sentences.length));

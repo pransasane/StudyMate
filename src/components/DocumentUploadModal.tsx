@@ -100,14 +100,11 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
         setProgress((prev) => (prev < 90 ? prev + 15 : prev));
       }, 200);
 
+      if (!user) throw new Error('Please sign in before uploading study material.');
       const res = await api.uploadDocument(file, docTitle);
+      await firestoreService.saveDocument(user.id, res.document);
       clearInterval(progressTimer);
       setProgress(100);
-      if (user) {
-        await firestoreService.saveDocument(user.id, res.document).catch((e) =>
-          console.warn('Firestore doc save error:', e)
-        );
-      }
       setExtractedDoc(res.document);
     } catch (err: any) {
       setError(err.message || 'Failed to upload and extract text from document.');
@@ -126,15 +123,12 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     setLoading(true);
 
     try {
+      if (!user) throw new Error('Please sign in before saving study notes.');
       const res = await api.pasteDocument({
         title: docTitle.trim() || 'Pasted Study Notes',
         text: pasteText.trim(),
       });
-      if (user) {
-        await firestoreService.saveDocument(user.id, res.document).catch((e) =>
-          console.warn('Firestore doc save error:', e)
-        );
-      }
+      await firestoreService.saveDocument(user.id, res.document);
       setExtractedDoc(res.document);
     } catch (err: any) {
       setError(err.message || 'Failed to save pasted notes.');
@@ -210,15 +204,12 @@ When a central bank alters its policy interest rate (the Federal Funds Rate), it
     setLoading(true);
 
     try {
+      if (!user) throw new Error('Please sign in before saving study material.');
       const res = await api.pasteDocument({
         title: sample.title,
         text: sample.text,
       });
-      if (user) {
-        await firestoreService.saveDocument(user.id, res.document).catch((e) =>
-          console.warn('Firestore doc save error:', e)
-        );
-      }
+      await firestoreService.saveDocument(user.id, res.document);
       setExtractedDoc(res.document);
     } catch (err: any) {
       setError(err.message || 'Failed to load sample document.');

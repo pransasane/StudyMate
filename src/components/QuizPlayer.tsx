@@ -89,16 +89,12 @@ export const QuizPlayer: React.FC<QuizPlayerProps> = ({
     setShowConfirmSubmit(false);
     setSubmitting(true);
     try {
-      const res = await api.submitQuizAttempt(quiz.id, {
+      if (!user) throw new Error('Please sign in before submitting this quiz.');
+      const res = await api.submitQuizAttempt(quiz, {
         userAnswers,
         timeSpentSeconds: timerSeconds,
       });
-
-      if (user) {
-        await firestoreService.saveQuizAttempt(user.id, res.attempt).catch((e) =>
-          console.warn('Firestore attempt save warning:', e)
-        );
-      }
+      await firestoreService.saveQuizAttempt(user.id, res.attempt);
 
       setResultData({
         score: res.score,

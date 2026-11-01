@@ -106,17 +106,23 @@ export const SummaryGeneratorModal: React.FC<SummaryGeneratorModalProps> = ({
     }, 3500);
 
     try {
+      if (!user) throw new Error('Please sign in before generating a summary.');
+      const sourceDocument = documents.find((document) => document.id === (docId || documents[0]?.id));
+      if (!sourceDocument) throw new Error('The selected document is not available in your Firestore library.');
+
       const res = await api.generateSummary({
-        documentId: docId || documents[0]?.id,
+        rawText: sourceDocument.extractedText,
+        documentId: sourceDocument.id,
         summaryType,
-        title: customTitle.trim() || undefined,
+        title: customTitle.trim() || sourceDocument.title,
+        geminiApiKey: user.geminiApiKey,
+        openRouterApiKey: user.openRouterApiKey,
+        preferredProvider: user.preferredProvider,
+        openRouterModel: user.openRouterModel,
       });
 
-      if (user) {
-        await firestoreService.saveSummary(user.id, res.summary).catch((e) =>
-          console.warn('Firestore summary save warning:', e)
-        );
-      }
+      // Do not report success unless Firestore has durably saved the result.
+      await firestoreService.saveSummary(user.id, res.summary);
 
       clearTimeout(timer1);
       clearTimeout(timer2);
