@@ -83,7 +83,7 @@ async function callOpenRouter(apiKey: string, model: string, prompt: string, sys
       'X-Title': 'StudyMate Learning Companion',
     },
     body: JSON.stringify({
-      model: model || 'google/gemini-2.0-flash-001',
+      model: model || 'google/gemini-3.5-flash',
       messages,
       temperature: 0.3,
     }),
@@ -194,7 +194,7 @@ export async function testGeminiConnection(apiKey?: string): Promise<{ success: 
  * Test OpenRouter connection
  */
 export async function testOpenRouterConnection(apiKey: string, model?: string): Promise<{ success: boolean; message: string }> {
-  const testModel = model || 'google/gemini-2.0-flash-001';
+  const testModel = model || 'google/gemini-3.5-flash';
   const res = await callOpenRouter(apiKey, testModel, 'Respond with the word: CONNECTED');
   return {
     success: true,
@@ -425,7 +425,7 @@ Please produce the comprehensive StudyMate summary now.`;
   if (useOpenRouter && effectiveOpenRouterKey) {
     try {
       providerUsed = 'openrouter';
-      modelUsed = openRouterModel || 'google/gemini-2.0-flash-001';
+      modelUsed = openRouterModel || 'google/gemini-3.5-flash';
       rawOutput = await callOpenRouter(effectiveOpenRouterKey, modelUsed, userPrompt, systemPrompt);
     } catch (err: any) {
       if (effectiveGeminiKey) {
@@ -453,7 +453,7 @@ Please produce the comprehensive StudyMate summary now.`;
         console.warn(`Gemini failed (${geminiErr.message}). Trying OpenRouter fallback...`);
         try {
           providerUsed = 'openrouter';
-          modelUsed = openRouterModel || 'google/gemini-2.0-flash-001';
+          modelUsed = openRouterModel || 'google/gemini-3.5-flash';
           rawOutput = await callOpenRouter(effectiveOpenRouterKey, modelUsed, userPrompt, systemPrompt);
         } catch (orErr: any) {
           throw new Error(`Gemini and OpenRouter AI requests failed. Gemini: ${geminiErr.message}. OpenRouter: ${orErr.message}`);
@@ -571,7 +571,7 @@ Output the JSON object now:`;
   if (useOpenRouter && effectiveOpenRouterKey) {
     try {
       providerUsed = 'openrouter';
-      modelUsed = openRouterModel || 'google/gemini-2.0-flash-001';
+      modelUsed = openRouterModel || 'google/gemini-3.5-flash';
       rawOutput = await callOpenRouter(effectiveOpenRouterKey, modelUsed, userPrompt, systemPrompt);
     } catch (err: any) {
       if (effectiveGeminiKey) {
@@ -599,7 +599,7 @@ Output the JSON object now:`;
         console.warn(`Gemini quiz failed (${geminiErr.message}). Trying OpenRouter...`);
         try {
           providerUsed = 'openrouter';
-          modelUsed = openRouterModel || 'google/gemini-2.0-flash-001';
+          modelUsed = openRouterModel || 'google/gemini-3.5-flash';
           rawOutput = await callOpenRouter(effectiveOpenRouterKey, modelUsed, userPrompt, systemPrompt);
         } catch (orErr: any) {
           throw new Error(`Gemini and OpenRouter quiz requests failed. Gemini: ${geminiErr.message}. OpenRouter: ${orErr.message}`);
