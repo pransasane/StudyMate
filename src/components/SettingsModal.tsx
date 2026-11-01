@@ -31,7 +31,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     user?.preferredProvider || (configStatus?.geminiAvailable ? 'gemini' : 'openrouter')
   );
   const [openRouterModel, setOpenRouterModel] = useState(
-    (user?.openRouterModel && user.openRouterModel !== 'google/gemini-2.0-flash-001') ? user.openRouterModel : 'google/gemini-3.5-flash'
+    (user?.openRouterModel && user.openRouterModel !== 'google/gemini-2.0-flash-001') ? user.openRouterModel : 'google/gemini-3.8-flash'
   );
 
   // Testing states
@@ -53,7 +53,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     setGeminiApiKey(user.geminiApiKey || '');
     setOpenRouterApiKey(user.openRouterApiKey || '');
     setPreferredProvider(user.preferredProvider || (configStatus?.geminiAvailable ? 'gemini' : 'openrouter'));
-    setOpenRouterModel((user.openRouterModel && user.openRouterModel !== 'google/gemini-2.0-flash-001') ? user.openRouterModel : 'google/gemini-3.5-flash');
+    setOpenRouterModel((user.openRouterModel && user.openRouterModel !== 'google/gemini-2.0-flash-001') ? user.openRouterModel : 'google/gemini-3.8-flash');
   }, [isOpen, user?.id]);
 
   if (!isOpen || !user) return null;
@@ -128,7 +128,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   };
 
   const openRouterModels = [
-    { id: 'google/gemini-3.5-flash', name: 'Google: Gemini 3.5 Flash (Fast & Highly structured)' },
+    { id: 'google/gemini-3.8-flash', name: 'Google: Gemini 3.5 Flash (Fast & Highly structured)' },
     { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Meta: Llama 3.3 70B Instruct (Academic reasoning)' },
     { id: 'anthropic/claude-3.5-sonnet', name: 'Anthropic: Claude 3.5 Sonnet' },
     { id: 'deepseek/deepseek-chat', name: 'DeepSeek: DeepSeek-V3' },
