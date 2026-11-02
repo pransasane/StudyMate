@@ -37,6 +37,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   // Status
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [extractedDoc, setExtractedDoc] = useState<Document | null>(null);
 
@@ -93,22 +94,37 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
 
     setError(null);
     setLoading(true);
-    setProgress(25);
+    setProgress(10);
+    setProgressMessage('Uploading file and extracting text…');
+    let progressTimer: ReturnType<typeof setInterval> | undefined;
 
     try {
-      const progressTimer = setInterval(() => {
-        setProgress((prev) => (prev < 90 ? prev + 15 : prev));
-      }, 200);
+      // Estimated progress is capped while the server extracts the document.
+      // It only reaches 100% after Storage and Firestore both finish.
+      progressTimer = setInterval(() => {
+        setProgress((prev) => (prev < 50 ? Math.min(50, prev + 3) : prev));
+      }, 1500);
 
       if (!user) throw new Error('Please sign in before uploading study material.');
       const res = await api.uploadDocument(file, docTitle);
-      await firestoreService.saveUploadedDocument(user.id, res.document, file);
-      clearInterval(progressTimer);
+      setProgress(65);
+      setProgressMessage('Text extracted. Saving original file to Firebase Storage…');
+      await firestoreService.saveUploadedDocument(user.id, res.document, file, (stage, percent) => {
+        if (stage === 'uploading-storage') {
+          setProgress(65 + Math.round((percent || 0) * 0.2));
+          setProgressMessage(`Saving original file to Firebase Storage… ${percent || 0}%`);
+        } else if (stage === 'saving-firestore') {
+          setProgress(90);
+          setProgressMessage('Original file saved. Saving document details…');
+        }
+      });
       setProgress(100);
+      setProgressMessage('Upload complete.');
       setExtractedDoc(res.document);
     } catch (err: any) {
       setError(err.message || 'Failed to upload and extract text from document.');
     } finally {
+      if (progressTimer) clearInterval(progressTimer);
       setLoading(false);
     }
   };
@@ -225,6 +241,7 @@ When a central bank alters its policy interest rate (the Federal Funds Rate), it
     setExtractedDoc(null);
     setError(null);
     setProgress(0);
+    setProgressMessage('');
   };
 
   return (
@@ -408,7 +425,7 @@ When a central bank alters its policy interest rate (the Federal Funds Rate), it
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept=".pdf,.docx,.doc,.txt,.md"
+                      accept=".pdf,.docx,.txt,.md"
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           validateAndSetFile(e.target.files[0]);
@@ -436,7 +453,7 @@ When a central bank alters its policy interest rate (the Federal Funds Rate), it
                           Drop your PDF, DOCX, or TXT file here
                         </p>
                         <p className="text-xs text-slate-600">
-                          or <span className="text-blue-600 underline">browse files</span> on your computer (max 25MB)
+                          or <span className="text-blue-600 underline">browse files</span> on your computer (max 4MB)
                         </p>
                       </div>
                     )}
@@ -458,7 +475,7 @@ When a central bank alters its policy interest rate (the Federal Funds Rate), it
                   {loading && (
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs font-semibold text-slate-600">
-                        <span>Extracting document text...</span>
+                        <span>{progressMessage || 'Processing document...'}</span>
                         <span>{progress}%</span>
                       </div>
                       <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
