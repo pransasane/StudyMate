@@ -1,4 +1,5 @@
 import mammoth from 'mammoth';
+import { getDocument } from 'pdfjs-serverless';
 
 export interface ExtractedDoc {
   text: string;
@@ -19,50 +20,42 @@ export async function extractTextFromBuffer(
   const lowerFilename = filename.toLowerCase();
 
   if (mimetype === 'application/pdf' || lowerFilename.endsWith('.pdf')) {
-    let parser: any = null;
+    let loadingTask: any = null;
     try {
-      // The pdf-parse v2 worker must be initialized before importing PDFParse.
-      // This registers the CanvasFactory/DOMMatrix support required by Vercel's
-      // Node.js serverless runtime.
-      const { CanvasFactory } = await import('pdf-parse/worker');
-      const { PDFParse } = await import('pdf-parse');
-
-      // PDFParse in v2 expects Uint8Array or Buffer in data property.
-      const uint8 = new Uint8Array(buffer);
-      parser = new PDFParse({ data: uint8, CanvasFactory });
-      
-      const textRes = await parser.getText({
-        pageJoiner: '\n\n',
-        lineEnforce: true,
+      // pdfjs-serverless embeds its worker and provides the server-side
+      // DOM polyfills needed by Vercel Node.js functions. Text extraction
+      // does not require a native Canvas package.
+      loadingTask = getDocument({
+        data: new Uint8Array(buffer),
+        useSystemFonts: true,
       });
+      const pdf = await loadingTask.promise;
+      pageCount = pdf.numPages;
 
-      const pages = Array.isArray(textRes.pages) ? textRes.pages : [];
-      pageCount = typeof textRes.total === 'number' && textRes.total > 0
-        ? textRes.total
-        : (pages.length || 1);
-
-      if (pages.length > 0) {
-        text = pages
-          .map((p: any) => (p && typeof p.text === 'string' ? p.text.trim() : ''))
+      const pageTexts: string[] = [];
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+        const page = await pdf.getPage(pageNumber);
+        const content = await page.getTextContent();
+        const pageText = content.items
+          .map((item: any) => typeof item.str === 'string' ? item.str : '')
           .filter(Boolean)
-          .join('\n\n');
+          .join(' ');
+        pageTexts.push(pageText);
+        await page.cleanup();
       }
-
-      if (!text && typeof textRes.text === 'string') {
-        text = textRes.text;
-      }
+      text = pageTexts.filter(Boolean).join('\\n\\n');
     } catch (err: any) {
-      const msg = err.message || '';
+      const msg = err?.message || '';
       if (msg.toLowerCase().includes('password') || msg.toLowerCase().includes('encrypted')) {
         throw new Error('This PDF is password-protected. Please upload an unprotected document.');
       }
       throw new Error(`Failed to parse PDF document: ${msg || 'Corrupted or unreadable PDF'}`);
     } finally {
-      if (parser && typeof parser.destroy === 'function') {
+      if (loadingTask && typeof loadingTask.destroy === 'function') {
         try {
-          await parser.destroy();
+          await loadingTask.destroy();
         } catch {
-          // Ignore cleanup errors
+          // Ignore cleanup errors after extraction.
         }
       }
     }
