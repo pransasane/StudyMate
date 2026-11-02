@@ -67,6 +67,14 @@ export const api = {
     return apiRequest<{ document: Document }>('/api/documents/upload', {
       method: 'POST',
       body: formData,
+      // Stay below the Vercel function execution ceiling so the UI can
+      // report a useful error instead of remaining on "Processing Document".
+      signal: AbortSignal.timeout(50000),
+    }).catch((error: any) => {
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+        throw new Error('Document extraction timed out. Please try a smaller PDF or split the material into shorter chapters.');
+      }
+      throw error;
     });
   },
 
