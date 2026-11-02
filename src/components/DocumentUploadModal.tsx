@@ -112,10 +112,13 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
       await firestoreService.saveUploadedDocument(user.id, res.document, file, (stage, percent) => {
         if (stage === 'uploading-storage') {
           setProgress(65 + Math.round((percent || 0) * 0.2));
-          setProgressMessage(`Saving original file to Firebase Storage… ${percent || 0}%`);
+          setProgressMessage(`Saving optional original-file backup… ${percent || 0}%`);
+        } else if (stage === 'storage-unavailable') {
+          setProgress(85);
+          setProgressMessage('Original-file backup is unavailable. Saving extracted study text…');
         } else if (stage === 'saving-firestore') {
-          setProgress(90);
-          setProgressMessage('Original file saved. Saving document details…');
+          setProgress(92);
+          setProgressMessage('Saving extracted study material to your library…');
         }
       });
       setProgress(100);
