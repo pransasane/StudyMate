@@ -136,12 +136,15 @@ api.post('/documents/upload', requireAuth, (req: AuthenticatedRequest, res) => {
       return res.status(400).json({ error: 'Please choose a document to upload.' });
     }
 
+    const extractionStartedAt = Date.now();
+    console.info(`[StudyMate upload] Started: ${req.file.originalname} (${req.file.size} bytes)`);
     try {
       const extracted = await extractTextFromBuffer(
         req.file.buffer,
         req.file.mimetype,
         req.file.originalname
       );
+      console.info(`[StudyMate upload] Extracted in ${Date.now() - extractionStartedAt}ms; pages=${extracted.pageCount ?? 'n/a'}; chars=${extracted.characterCount}`);
       const document = makeDocument({
         userId: req.user!.id,
         title: req.body.title?.trim() || req.file.originalname.replace(/\.[^/.]+$/, ''),
@@ -153,6 +156,7 @@ api.post('/documents/upload', requireAuth, (req: AuthenticatedRequest, res) => {
       });
       res.status(201).json({ document });
     } catch (error: any) {
+      console.error(`[StudyMate upload] Failed after ${Date.now() - extractionStartedAt}ms:`, error);
       const tooLarge = String(error.message || '').includes('too much extracted text');
       res.status(tooLarge ? 413 : 422).json({ error: error.message || 'Could not extract document text.' });
     }
