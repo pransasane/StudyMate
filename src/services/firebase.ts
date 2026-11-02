@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getStorage, ref, uploadBytes, deleteObject, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytesResumable, deleteObject, getDownloadURL } from 'firebase/storage';
 import {
   getFirestore,
   doc,
@@ -164,7 +164,12 @@ export const firestoreService = {
    * then save the storage path beside its extracted text in Firestore.
    * If the Firestore write fails, remove the uploaded object to avoid an orphan.
    */
-  async saveUploadedDocument(userId: string, document: Document, file: File): Promise<Document> {
+  async saveUploadedDocument(
+    userId: string,
+    document: Document,
+    file: File,
+    onStage?: (stage: 'uploading-storage' | 'saving-firestore', progress?: number) => void
+  ): Promise<Document> {
     assertOwner(userId);
     const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'study-material';
     const storagePath = `users/${userId}/documents/${document.id}/${safeFileName}`;
@@ -172,17 +177,48 @@ export const firestoreService = {
     let uploaded = false;
 
     try {
-      await uploadBytes(fileRef, file, {
-        contentType: file.type || 'application/octet-stream',
-        customMetadata: {
-          ownerUid: userId,
-          documentId: document.id,
-        },
-      });
-      uploaded = true;
+      onStage?.('uploading-storage', 0);
+      await new Promise<void>((resolve, reject) => {
+        const task = uploadBytesResumable(fileRef, file, {
+          contentType: file.type || 'application/octet-stream',
+          customMetadata: {
+            ownerUid: userId,
+            documentId: document.id,
+          },
+        });
+        const timeout = setTimeout(() => {
+          task.cancel();
+          reject(new Error('Saving the original file to Firebase Storage timed out. Please check your connection and try again.'));
+        }, 40000);
 
+        task.on(
+          'state_changed',
+          (snapshot) => {
+            const percent = snapshot.totalBytes > 0
+              ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+              : 0;
+            onStage?.('uploading-storage', percent);
+          },
+          (error) => {
+            clearTimeout(timeout);
+            reject(error);
+          },
+          () => {
+            clearTimeout(timeout);
+            uploaded = true;
+            resolve();
+          }
+        );
+      });
+
+      onStage?.('saving-firestore');
       const savedDocument: Document = { ...document, userId, storagePath };
-      await this.saveDocument(userId, savedDocument);
+      await Promise.race([
+        this.saveDocument(userId, savedDocument),
+        new Promise<never>((_, reject) => setTimeout(() => reject(
+          new Error('The file was uploaded, but saving its details to Firestore timed out. Please retry.')
+        ), 20000)),
+      ]);
       return savedDocument;
     } catch (error) {
       if (uploaded) {
