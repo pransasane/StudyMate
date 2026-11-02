@@ -160,15 +160,15 @@ export const firestoreService = {
   },
 
   /**
-   * Preserve the uploaded original in the owner's private Firebase Storage folder,
-   * then save the storage path beside its extracted text in Firestore.
-   * If the Firestore write fails, remove the uploaded object to avoid an orphan.
+   * Save extracted study text as the required durable record in Firestore.
+   * A copy of the original file in Firebase Storage is a best-effort backup:
+   * an unavailable or misconfigured Storage bucket must never block studying.
    */
   async saveUploadedDocument(
     userId: string,
     document: Document,
     file: File,
-    onStage?: (stage: 'uploading-storage' | 'saving-firestore', progress?: number) => void
+    onStage?: (stage: 'uploading-storage' | 'storage-unavailable' | 'saving-firestore', progress?: number) => void
   ): Promise<Document> {
     assertOwner(userId);
     const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || 'study-material';
@@ -176,9 +176,19 @@ export const firestoreService = {
     const fileRef = ref(storage, storagePath);
     let uploaded = false;
 
+    // Attempt the original-file backup briefly. If Firebase Storage cannot
+    // start or finish, continue with the extracted text instead of blocking.
+    onStage?.('uploading-storage', 0);
     try {
-      onStage?.('uploading-storage', 0);
-      await new Promise<void>((resolve, reject) => {
+      uploaded = await new Promise<boolean>((resolve) => {
+        let settled = false;
+        let timeout: ReturnType<typeof setTimeout>;
+        const finish = (saved: boolean) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          resolve(saved);
+        };
         const task = uploadBytesResumable(fileRef, file, {
           contentType: file.type || 'application/octet-stream',
           customMetadata: {
@@ -186,10 +196,10 @@ export const firestoreService = {
             documentId: document.id,
           },
         });
-        const timeout = setTimeout(() => {
+        timeout = setTimeout(() => {
           task.cancel();
-          reject(new Error('Saving the original file to Firebase Storage timed out. Please check your connection and try again.'));
-        }, 40000);
+          finish(false);
+        }, 8000);
 
         task.on(
           'state_changed',
@@ -200,25 +210,40 @@ export const firestoreService = {
             onStage?.('uploading-storage', percent);
           },
           (error) => {
-            clearTimeout(timeout);
-            reject(error);
+            console.warn('StudyMate original-file backup skipped; extracted study text will still be saved:', error);
+            finish(false);
           },
-          () => {
-            clearTimeout(timeout);
-            uploaded = true;
-            resolve();
-          }
+          () => finish(true)
         );
       });
+    } catch (error) {
+      // Storage is optional. Firestore persistence below remains mandatory.
+      console.warn('StudyMate original-file backup could not start:', error);
+      uploaded = false;
+    }
 
-      onStage?.('saving-firestore');
-      const savedDocument: Document = { ...document, userId, storagePath };
+    if (!uploaded) {
+      onStage?.('storage-unavailable');
+      console.warn('Original file was not archived in Firebase Storage. Saving extracted text to Firestore.');
+    }
+
+    const savedDocument: Document = uploaded
+      ? { ...document, userId, storagePath }
+      : { ...document, userId };
+    onStage?.('saving-firestore');
+
+    try {
+      let firestoreTimeout: ReturnType<typeof setTimeout> | undefined;
       await Promise.race([
         this.saveDocument(userId, savedDocument),
-        new Promise<never>((_, reject) => setTimeout(() => reject(
-          new Error('The file was uploaded, but saving its details to Firestore timed out. Please retry.')
-        ), 20000)),
-      ]);
+        new Promise<never>((_, reject) => {
+          firestoreTimeout = setTimeout(() => reject(
+            new Error('Saving the extracted study material to Firestore timed out. Please retry.')
+          ), 20000);
+        }),
+      ]).finally(() => {
+        if (firestoreTimeout) clearTimeout(firestoreTimeout);
+      });
       return savedDocument;
     } catch (error) {
       if (uploaded) {
