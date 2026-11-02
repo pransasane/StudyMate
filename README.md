@@ -91,9 +91,38 @@ Frontend components can also import the typed client service from `src/services/
 
 ---
 
-## 🗄️ Google Firebase Database
+## 🗄️ Firebase Authentication & Firestore
 
-StudyMate connects to Google Firebase Firestore to store and persist user data:
+Firebase is the durable source of truth for StudyMate accounts and student records. The Vercel API does not store profiles or study material in local files or server memory.
+
+- **Firebase Authentication** manages email/password and Google sign-in, password reset, and user sessions.
+- **Cloud Firestore** stores each user's profile and preferences, extracted study documents and storage paths, AI summaries, quizzes, and quiz attempts.
+- **Firebase Storage** stores each original uploaded PDF, DOCX, TXT, or Markdown file at a private path under `users/{uid}/documents/{documentId}/`.
+- Each signed-in user's data is stored below `users/{uid}`; Firestore rules restrict access to that same Firebase UID.
+- The API verifies the Firebase ID token on every protected request. Uploaded text is extracted by the API and then saved by the signed-in client directly to Firestore.
+- AI requests receive the selected document text and the user's chosen provider credentials only for that request. The server does not persist those credentials.
+
+Configuration:
+- Firebase Web configuration is in `firebase-applet-config.json`.
+- The server verification key is `FIREBASE_API_KEY`; it must be set as a Vercel environment variable (Production, Preview, and Development).
+- Firestore rules are in `firestore.rules`; Storage rules are in `storage.rules`.
+- `firebase.json` and `.firebaserc` target the named Firestore database configured in `firebase-applet-config.json`.
+
+### One-time Firebase setup
+
+1. In Firebase Console, enable **Authentication → Email/Password** and **Google** providers.
+2. Add the deployed StudyMate domain to **Authentication → Settings → Authorized domains**.
+3. Ensure the named Firestore database in `firebase-applet-config.json` exists.
+4. From the repository root, authenticate with the Firebase CLI and deploy the Firestore rules:
+
+```bash
+npx firebase-tools login
+npx firebase-tools deploy --only firestore,storage --project studymate-135bf
+```
+
+The CLI deployment applies the checked-in rules to the database listed in `firebase.json`. Review the Firebase Console's current rules before deploying because a CLI rules deployment replaces the rules currently published there.
+
+StudyMate's per-user collections are:
 - Configuration is in `firebase-applet-config.json`
 - Security rules are defined in `firestore.rules` (zero-trust, user-scoped ABAC)
 - Collections:

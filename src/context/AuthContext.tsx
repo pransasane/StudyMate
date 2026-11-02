@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User, ConfigStatus } from '../types/index.js';
-import { api, authStorage } from '../services/api.js';
+import { api } from '../services/api.js';
 import {
   auth,
   googleProvider,
@@ -37,118 +37,108 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(authStorage.getToken());
-  const [loading, setLoading] = useState<boolean>(true);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [configStatus, setConfigStatus] = useState<ConfigStatus | null>(null);
-  const [isFirebaseConnected] = useState<boolean>(true);
-  const [isFirebaseUser, setIsFirebaseUser] = useState<boolean>(false);
+  const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
+  const [isFirebaseUser, setIsFirebaseUser] = useState(false);
+  const authActionInProgress = useRef(false);
 
-  // Firebase Auth owns the persistent account. Firestore stores the profile;
-  // the API issues a short-lived app session only after verifying the Firebase ID token.
+  /**
+   * Firebase Authentication owns identity.
+   * Firestore owns the profile and preferences.
+   * No application account/session is stored in Vercel's temporary filesystem.
+   */
   const syncFirebaseProfile = async (
-    fbUser: FirebaseUser,
+    firebaseUser: FirebaseUser,
     details?: { fullName?: string; educationLevel?: string }
   ): Promise<User> => {
-    const existingProfile = await firestoreService.getUserProfile(fbUser.uid);
+    if (!firebaseUser.uid || !firebaseUser.email) {
+      throw new Error('Your Firebase account does not have a valid email address.');
+    }
+
+    const existing = await firestoreService.getUserProfile(firebaseUser.uid);
     const profile: User = {
-      ...(existingProfile || {}),
-      id: fbUser.uid,
-      email: fbUser.email || existingProfile?.email || '',
+      ...(existing || {}),
+      id: firebaseUser.uid,
+      email: firebaseUser.email,
       fullName:
         details?.fullName?.trim() ||
-        fbUser.displayName ||
-        existingProfile?.fullName ||
-        fbUser.email?.split('@')[0] ||
+        firebaseUser.displayName ||
+        existing?.fullName ||
+        firebaseUser.email.split('@')[0] ||
         'Student',
       educationLevel:
         details?.educationLevel ||
-        existingProfile?.educationLevel ||
+        existing?.educationLevel ||
         'College / University',
-      preferredProvider: existingProfile?.preferredProvider || 'gemini',
-      createdAt: existingProfile?.createdAt || new Date().toISOString(),
+      preferredProvider: existing?.preferredProvider || 'gemini',
+      createdAt: existing?.createdAt || firebaseUser.metadata.creationTime || new Date().toISOString(),
     };
 
+    // A profile write must succeed before the user is admitted to the workspace.
     await firestoreService.saveUserProfile(profile);
 
-    const idToken = await fbUser.getIdToken();
-    const syncRes = await api.syncFirebaseUser({
-      idToken,
-      fullName: profile.fullName,
-      educationLevel: profile.educationLevel,
-    });
-
-    authStorage.setToken(syncRes.token);
-    setToken(syncRes.token);
+    const idToken = await firebaseUser.getIdToken();
+    setToken(idToken);
     setUser(profile);
+    setIsFirebaseConnected(true);
     setIsFirebaseUser(true);
     return profile;
   };
 
-  // Fetch server config status
   useEffect(() => {
     api.getConfigStatus()
       .then(setConfigStatus)
-      .catch((err) => console.warn('Could not fetch server config status:', err));
+      .catch((err) => console.warn('Could not fetch AI configuration status:', err));
   }, []);
 
-  // Restore a Firebase session after a refresh and obtain a matching API session.
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      if (fbUser) {
-        setIsFirebaseUser(true);
-        try {
-          await syncFirebaseProfile(fbUser);
-        } catch (e) {
-          console.warn('Firebase user sync note:', e);
-        } finally {
-          setLoading(false);
-        }
-      } else {
+    let active = true;
+
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!active || authActionInProgress.current) return;
+
+      if (!firebaseUser) {
+        setUser(null);
+        setToken(null);
         setIsFirebaseUser(false);
-        const storedToken = authStorage.getToken();
-        if (storedToken) {
-          try {
-            const { user: currentUser } = await api.getCurrentUser();
-            setUser(currentUser);
-            setToken(storedToken);
-          } catch {
-            authStorage.clearToken();
-            setUser(null);
-            setToken(null);
-          }
-        } else {
+        setIsFirebaseConnected(false);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setIsFirebaseUser(true);
+      try {
+        const profile = await syncFirebaseProfile(firebaseUser);
+        if (active) setUser(profile);
+      } catch (error) {
+        console.error('Firebase profile synchronization failed:', error);
+        if (active) {
           setUser(null);
           setToken(null);
+          setIsFirebaseConnected(false);
         }
-        setLoading(false);
+      } finally {
+        if (active) setLoading(false);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
-  const signInWithGoogle = async () => {
-    setLoading(true);
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      await syncFirebaseProfile(result.user);
-    } catch (err: any) {
-      console.error('Google Sign-In Error:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const login = async (email: string, password: string) => {
+    authActionInProgress.current = true;
     setLoading(true);
     try {
       const result = await signInWithEmailAndPassword(auth, email.trim(), password);
       await syncFirebaseProfile(result.user);
-    } catch (err: any) {
-      console.error('Email Sign-In Error:', err);
-      throw err;
     } finally {
+      authActionInProgress.current = false;
       setLoading(false);
     }
   };
@@ -159,6 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password: string,
     educationLevel?: string
   ) => {
+    authActionInProgress.current = true;
     setLoading(true);
     try {
       const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
@@ -167,10 +158,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fullName: fullName.trim(),
         educationLevel,
       });
-    } catch (err: any) {
-      console.error('Email Registration Error:', err);
-      throw err;
     } finally {
+      authActionInProgress.current = false;
+      setLoading(false);
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    authActionInProgress.current = true;
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      await syncFirebaseProfile(result.user);
+    } finally {
+      authActionInProgress.current = false;
       setLoading(false);
     }
   };
@@ -180,45 +181,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    try {
-      await firebaseSignOut(auth);
-    } catch (e) {
-      console.warn('Firebase signout error:', e);
-    }
-    setIsFirebaseUser(false);
-    authStorage.clearToken();
-    setToken(null);
+    await firebaseSignOut(auth);
     setUser(null);
+    setToken(null);
+    setIsFirebaseUser(false);
+    setIsFirebaseConnected(false);
   };
 
   const updateSettings = async (settings: Partial<User>) => {
-    if (!user) return;
-    const res = await api.updateSettings(settings);
-    const updatedUser = res.user;
-    setUser(updatedUser);
-
-    if (auth.currentUser && auth.currentUser.uid === updatedUser.id) {
-      await firestoreService.saveUserProfile(updatedUser).catch((e) =>
-        console.warn('Firestore profile update warning:', e)
-      );
+    if (!user || !auth.currentUser || auth.currentUser.uid !== user.id) {
+      throw new Error('Please sign in again before updating your profile.');
     }
+
+    const updatedProfile: User = {
+      ...user,
+      ...settings,
+      id: user.id,
+      email: auth.currentUser.email || user.email,
+      createdAt: user.createdAt,
+    };
+
+    // Profile and personal AI settings are persisted in the signed-in user's Firestore document.
+    await firestoreService.saveUserProfile(updatedProfile);
+    setUser(updatedProfile);
   };
 
   const refreshUser = async () => {
-    if (!user) return;
-    try {
-      if (auth.currentUser && auth.currentUser.uid === user.id) {
-        const fbProfile = await firestoreService.getUserProfile(user.id);
-        if (fbProfile) {
-          setUser(fbProfile);
-          return;
-        }
-      }
-      const { user: updated } = await api.getCurrentUser();
-      setUser(updated);
-    } catch (e) {
-      console.error('Failed to refresh user:', e);
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+      setUser(null);
+      return;
     }
+
+    const profile = await firestoreService.getUserProfile(firebaseUser.uid);
+    if (profile) setUser(profile);
+    setToken(await firebaseUser.getIdToken(true));
   };
 
   return (

@@ -22,6 +22,7 @@ export interface Document {
   pageCount?: number;
   extractedText: string;
   snippet: string;
+  storagePath?: string;
   createdAt: string;
 }
 

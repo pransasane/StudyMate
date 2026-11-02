@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.js';
-import { api } from '../services/api.js';
 import { firestoreService } from '../services/firebase.js';
 import {
   Document,
@@ -107,8 +106,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           setDocuments(docs);
           recalculateAndSetStats();
         },
-        () => {
-          api.getDocuments().then((res) => setDocuments(res.documents)).catch(() => {});
+        (error) => {
+          console.error('Firestore documents listener failed:', error);
+          setActionError('Study materials could not be loaded from Firebase. Please refresh and try again.');
+          setLoading(false);
         }
       );
 
@@ -120,8 +121,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           setSummaries(sums);
           recalculateAndSetStats();
         },
-        () => {
-          api.getSummaries().then((res) => setSummaries(res.summaries)).catch(() => {});
+        (error) => {
+          console.error('Firestore summaries listener failed:', error);
+          setActionError('Summaries could not be loaded from Firebase. Please refresh and try again.');
+          setLoading(false);
         }
       );
 
@@ -133,8 +136,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           setQuizzes(qs);
           recalculateAndSetStats();
         },
-        () => {
-          api.getQuizzes().then((res) => setQuizzes(res.quizzes)).catch(() => {});
+        (error) => {
+          console.error('Firestore quizzes listener failed:', error);
+          setActionError('Quizzes could not be loaded from Firebase. Please refresh and try again.');
+          setLoading(false);
         }
       );
 
@@ -146,32 +151,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
           setAttempts(atts);
           recalculateAndSetStats();
         },
-        () => {
-          api.getAllAttempts().then((res) => setAttempts(res.attempts)).catch(() => {});
+        (error) => {
+          console.error('Firestore quiz attempts listener failed:', error);
+          setActionError('Quiz history could not be loaded from Firebase. Please refresh and try again.');
+          setLoading(false);
         }
       );
     } else {
-      // Fallback for standard session: load via server API
-      Promise.all([
-        api.getDocuments().then((res) => {
-          currentDocs = res.documents;
-          setDocuments(res.documents);
-        }).catch(() => {}),
-        api.getSummaries().then((res) => {
-          currentSums = res.summaries;
-          setSummaries(res.summaries);
-        }).catch(() => {}),
-        api.getQuizzes().then((res) => {
-          currentQuizzes = res.quizzes;
-          setQuizzes(res.quizzes);
-        }).catch(() => {}),
-        api.getAllAttempts().then((res) => {
-          currentAttempts = res.attempts;
-          setAttempts(res.attempts);
-        }).catch(() => {}),
-      ]).finally(() => {
-        recalculateAndSetStats();
-      });
+      // The workspace requires Firebase Authentication. Never fall back to
+      // serverless process memory, which is not durable between invocations.
+      currentDocs = [];
+      currentSums = [];
+      currentQuizzes = [];
+      currentAttempts = [];
+      setDocuments([]);
+      setSummaries([]);
+      setQuizzes([]);
+      setAttempts([]);
+      recalculateAndSetStats();
     }
 
     return () => {
@@ -187,26 +184,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setDeleting(true);
     setActionError(null);
     try {
+      if (!isFirebaseUser) {
+        throw new Error('Please sign in again before deleting saved study data.');
+      }
       if (deleteTarget.type === 'document') {
-        await Promise.all([
-          isFirebaseUser ? firestoreService.deleteDocument(user.id, deleteTarget.id).catch(() => {}) : Promise.resolve(),
-          api.deleteDocument(deleteTarget.id).catch(() => {}),
-        ]);
+        await firestoreService.deleteDocument(user.id, deleteTarget.id);
         setDocuments((prev) => prev.filter((d) => d.id !== deleteTarget.id));
       } else if (deleteTarget.type === 'summary') {
-        await Promise.all([
-          isFirebaseUser ? firestoreService.deleteSummary(user.id, deleteTarget.id).catch(() => {}) : Promise.resolve(),
-          api.deleteSummary(deleteTarget.id).catch(() => {}),
-        ]);
+        await firestoreService.deleteSummary(user.id, deleteTarget.id);
         setSummaries((prev) => prev.filter((s) => s.id !== deleteTarget.id));
       } else if (deleteTarget.type === 'quiz') {
-        await Promise.all([
-          isFirebaseUser ? firestoreService.deleteQuiz(user.id, deleteTarget.id).catch(() => {}) : Promise.resolve(),
-          api.deleteQuiz(deleteTarget.id).catch(() => {}),
-        ]);
+        await firestoreService.deleteQuiz(user.id, deleteTarget.id);
         setQuizzes((prev) => prev.filter((q) => q.id !== deleteTarget.id));
       }
-      setDeleteTarget(null);
       setDeleteTarget(null);
     } catch (err: any) {
       setActionError(err.message || 'Failed to delete item.');

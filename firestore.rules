@@ -2,61 +2,46 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Global Safety Net: Default-deny all queries and writes
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Health check probe collection for initial client connectivity test
-    match /test/{docId} {
-      allow get: if true;
-    }
-
-    // Reusable Global Security Helpers
-    function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    function isSignedIn() {
+    function signedIn() {
       return request.auth != null;
     }
 
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return signedIn() && request.auth.uid == userId;
     }
 
-    function incoming() {
-      return request.resource.data;
+    function isValidId(id) {
+      return id is string
+        && id.size() > 0
+        && id.size() <= 128
+        && id.matches('^[A-Za-z0-9_-]+$');
     }
 
-    function existing() {
-      return resource.data;
-    }
-
-    // Schema Validation Helpers
     function isValidUser(data, userId) {
       return data.id == userId
-        && data.id is string
         && isValidId(data.id)
         && data.email is string
         && data.email.size() <= 256
         && data.fullName is string
         && data.fullName.size() >= 1
         && data.fullName.size() <= 128
-        && (!('educationLevel' in data) || data.educationLevel == null || (data.educationLevel is string && data.educationLevel.size() <= 64))
-        && (!('preferredProvider' in data) || data.preferredProvider in ['gemini', 'openrouter'])
-        && (!('geminiApiKey' in data) || data.geminiApiKey == null || (data.geminiApiKey is string && data.geminiApiKey.size() <= 256))
-        && (!('openRouterApiKey' in data) || data.openRouterApiKey == null || (data.openRouterApiKey is string && data.openRouterApiKey.size() <= 256))
-        && (!('openRouterModel' in data) || data.openRouterModel == null || (data.openRouterModel is string && data.openRouterModel.size() <= 128))
-        && (!('updatedAt' in data) || data.updatedAt == null || (data.updatedAt is string && data.updatedAt.size() <= 64))
         && data.createdAt is string
-        && data.createdAt.size() <= 64;
+        && data.createdAt.size() <= 64
+        && (!('educationLevel' in data) || data.educationLevel == null
+          || (data.educationLevel is string && data.educationLevel.size() <= 64))
+        && (!('preferredProvider' in data) || data.preferredProvider in ['gemini', 'openrouter'])
+        && (!('geminiApiKey' in data) || data.geminiApiKey == null
+          || (data.geminiApiKey is string && data.geminiApiKey.size() <= 256))
+        && (!('openRouterApiKey' in data) || data.openRouterApiKey == null
+          || (data.openRouterApiKey is string && data.openRouterApiKey.size() <= 256))
+        && (!('openRouterModel' in data) || data.openRouterModel == null
+          || (data.openRouterModel is string && data.openRouterModel.size() <= 128))
+        && (!('updatedAt' in data) || data.updatedAt == null
+          || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
 
     function isValidDocument(data, userId) {
-      return data.id is string
-        && isValidId(data.id)
+      return isValidId(data.id)
         && data.userId == userId
         && data.userId == request.auth.uid
         && data.title is string
@@ -64,21 +49,27 @@ service cloud.firestore {
         && data.title.size() <= 256
         && data.originalFilename is string
         && data.originalFilename.size() <= 256
+        && data.mimetype is string
+        && data.mimetype.size() <= 128
         && data.extractedText is string
-        && data.extractedText.size() <= 500000
-        && (!('snippet' in data) || data.snippet == null || (data.snippet is string && data.snippet.size() <= 1000))
-        && (!('mimetype' in data) || (data.mimetype is string && data.mimetype.size() <= 128))
+        && data.extractedText.size() <= 690000
+        && data.createdAt is string
+        && data.createdAt.size() <= 64
+        && (!('snippet' in data) || data.snippet == null
+          || (data.snippet is string && data.snippet.size() <= 1000))
         && (!('fileSize' in data) || data.fileSize is number)
         && (!('wordCount' in data) || data.wordCount is number)
         && (!('characterCount' in data) || data.characterCount is number)
         && (!('pageCount' in data) || data.pageCount == null || data.pageCount is number)
-        && data.createdAt is string
-        && data.createdAt.size() <= 64;
+        && (!('storagePath' in data) || (
+          data.storagePath is string
+          && data.storagePath.size() <= 512
+          && data.storagePath.matches('^users/' + userId + '/documents/' + data.id + '/[^/]+$')
+        ));
     }
 
     function isValidSummary(data, userId) {
-      return data.id is string
-        && isValidId(data.id)
+      return isValidId(data.id)
         && data.userId == userId
         && data.userId == request.auth.uid
         && data.title is string
@@ -89,15 +80,15 @@ service cloud.firestore {
         && data.content.size() <= 500000
         && data.keyPoints is list
         && data.keyPoints.size() <= 50
-        && (!('documentId' in data) || data.documentId == null || (data.documentId is string && isValidId(data.documentId)))
-        && (!('wordCount' in data) || data.wordCount is number)
         && data.createdAt is string
-        && data.createdAt.size() <= 64;
+        && data.createdAt.size() <= 64
+        && (!('documentId' in data) || data.documentId == null
+          || (data.documentId is string && isValidId(data.documentId)))
+        && (!('wordCount' in data) || data.wordCount is number);
     }
 
     function isValidQuiz(data, userId) {
-      return data.id is string
-        && isValidId(data.id)
+      return isValidId(data.id)
         && data.userId == userId
         && data.userId == request.auth.uid
         && data.title is string
@@ -110,16 +101,17 @@ service cloud.firestore {
         && data.questions is list
         && data.questions.size() >= 1
         && data.questions.size() <= 50
-        && (!('documentId' in data) || data.documentId == null || (data.documentId is string && isValidId(data.documentId)))
-        && (!('summaryId' in data) || data.summaryId == null || (data.summaryId is string && isValidId(data.summaryId)))
-        && (!('questionType' in data) || data.questionType in ['multiple_choice', 'true_false', 'mixed'])
         && data.createdAt is string
-        && data.createdAt.size() <= 64;
+        && data.createdAt.size() <= 64
+        && (!('documentId' in data) || data.documentId == null
+          || (data.documentId is string && isValidId(data.documentId)))
+        && (!('summaryId' in data) || data.summaryId == null
+          || (data.summaryId is string && isValidId(data.summaryId)))
+        && (!('questionType' in data) || data.questionType in ['multiple_choice', 'true_false', 'mixed']);
     }
 
     function isValidQuizAttempt(data, userId) {
-      return data.id is string
-        && isValidId(data.id)
+      return isValidId(data.id)
         && data.userId == userId
         && data.userId == request.auth.uid
         && data.quizId is string
@@ -131,70 +123,82 @@ service cloud.firestore {
         && data.totalQuestions is number
         && data.totalQuestions >= 1
         && data.score <= data.totalQuestions
+        && data.completedAt is string
+        && data.completedAt.size() <= 64
         && (!('percentage' in data) || data.percentage is number)
         && (!('timeSpentSeconds' in data) || data.timeSpentSeconds is number)
-        && (!('userAnswers' in data) || data.userAnswers is map)
-        && data.completedAt is string
-        && data.completedAt.size() <= 64;
+        && (!('userAnswers' in data) || data.userAnswers is map);
     }
 
-    // User Profile Document
+    // Anonymous read-only probe used by the app's Firebase connectivity check.
+    match /test/{docId} {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
     match /users/{userId} {
       allow get: if isOwner(userId) && isValidId(userId);
-      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming(), userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && isValidId(userId)
+        && isValidUser(request.resource.data, userId);
       allow update: if isOwner(userId) && isValidId(userId)
-        && isValidUser(incoming(), userId)
-        && incoming().id == existing().id
-        && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt);
+        && isValidUser(request.resource.data, userId)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner(userId) && isValidId(userId);
 
-      // User Study Documents Subcollection
       match /documents/{documentId} {
-        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(documentId);
-        allow list: if isOwner(userId) && isValidId(userId);
-        allow create: if isOwner(userId) && isValidId(userId) && isValidId(documentId) && isValidDocument(incoming(), userId);
+        allow get, list, delete: if isOwner(userId) && isValidId(userId) && isValidId(documentId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(documentId)
+          && isValidDocument(request.resource.data, userId)
+          && request.resource.data.id == documentId;
         allow update: if isOwner(userId) && isValidId(userId) && isValidId(documentId)
-          && isValidDocument(incoming(), userId)
-          && incoming().id == existing().id
-          && incoming().userId == existing().userId
-          && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt);
+          && isValidDocument(request.resource.data, userId)
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.createdAt == resource.data.createdAt;
       }
 
-      // User AI Summaries Subcollection
       match /summaries/{summaryId} {
-        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(summaryId);
-        allow list: if isOwner(userId) && isValidId(userId);
-        allow create: if isOwner(userId) && isValidId(userId) && isValidId(summaryId) && isValidSummary(incoming(), userId);
+        allow get, list, delete: if isOwner(userId) && isValidId(userId) && isValidId(summaryId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(summaryId)
+          && isValidSummary(request.resource.data, userId)
+          && request.resource.data.id == summaryId;
         allow update: if isOwner(userId) && isValidId(userId) && isValidId(summaryId)
-          && isValidSummary(incoming(), userId)
-          && incoming().id == existing().id
-          && incoming().userId == existing().userId
-          && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt);
+          && isValidSummary(request.resource.data, userId)
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.createdAt == resource.data.createdAt;
       }
 
-      // User AI Quizzes Subcollection
       match /quizzes/{quizId} {
-        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(quizId);
-        allow list: if isOwner(userId) && isValidId(userId);
-        allow create: if isOwner(userId) && isValidId(userId) && isValidId(quizId) && isValidQuiz(incoming(), userId);
+        allow get, list, delete: if isOwner(userId) && isValidId(userId) && isValidId(quizId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(quizId)
+          && isValidQuiz(request.resource.data, userId)
+          && request.resource.data.id == quizId;
         allow update: if isOwner(userId) && isValidId(userId) && isValidId(quizId)
-          && isValidQuiz(incoming(), userId)
-          && incoming().id == existing().id
-          && incoming().userId == existing().userId
-          && (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt);
+          && isValidQuiz(request.resource.data, userId)
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.createdAt == resource.data.createdAt;
       }
 
-      // User Quiz Attempts Subcollection
       match /quizAttempts/{attemptId} {
-        allow get, delete: if isOwner(userId) && isValidId(userId) && isValidId(attemptId);
-        allow list: if isOwner(userId) && isValidId(userId);
-        allow create: if isOwner(userId) && isValidId(userId) && isValidId(attemptId) && isValidQuizAttempt(incoming(), userId);
+        allow get, list, delete: if isOwner(userId) && isValidId(userId) && isValidId(attemptId);
+        allow create: if isOwner(userId) && isValidId(userId) && isValidId(attemptId)
+          && isValidQuizAttempt(request.resource.data, userId)
+          && request.resource.data.id == attemptId;
         allow update: if isOwner(userId) && isValidId(userId) && isValidId(attemptId)
-          && isValidQuizAttempt(incoming(), userId)
-          && incoming().id == existing().id
-          && incoming().userId == existing().userId
-          && (!('completedAt' in existing()) || incoming().completedAt == existing().completedAt);
+          && isValidQuizAttempt(request.resource.data, userId)
+          && request.resource.data.id == resource.data.id
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.completedAt == resource.data.completedAt;
       }
+    }
+
+    // Default deny for collections not listed above.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

@@ -109,13 +109,26 @@ export const QuizGeneratorModal: React.FC<QuizGeneratorModalProps> = ({
         payload.summaryId = selectedSummaryId || summaries[0]?.id;
       }
 
-      const res = await api.generateQuiz(payload);
+      if (!user) throw new Error('Please sign in before generating a quiz.');
+      const sourceDocument = sourceType === 'document'
+        ? documents.find((document) => document.id === (selectedDocId || documents[0]?.id))
+        : undefined;
+      const sourceSummary = sourceType === 'summary'
+        ? summaries.find((summary) => summary.id === (selectedSummaryId || summaries[0]?.id))
+        : undefined;
+      const rawText = sourceDocument?.extractedText || sourceSummary?.content;
+      if (!rawText) throw new Error('The selected source is not available in your Firestore library.');
 
-      if (user) {
-        await firestoreService.saveQuiz(user.id, res.quiz).catch((e) =>
-          console.warn('Firestore quiz save warning:', e)
-        );
-      }
+      payload.rawText = rawText;
+      payload.documentId = sourceDocument?.id;
+      payload.summaryId = sourceSummary?.id;
+      payload.geminiApiKey = user.geminiApiKey;
+      payload.openRouterApiKey = user.openRouterApiKey;
+      payload.preferredProvider = user.preferredProvider;
+      payload.openRouterModel = user.openRouterModel;
+
+      const res = await api.generateQuiz(payload);
+      await firestoreService.saveQuiz(user.id, res.quiz);
 
       clearTimeout(timer1);
       onQuizGenerated(res.quiz);
